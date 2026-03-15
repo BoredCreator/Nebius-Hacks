@@ -113,7 +113,7 @@ def screenshot(save_path: str, pid: int = None) -> str:
             pass
 
     # Fallback: full screen capture
-    subprocess.run(["screencapture", "-x", save_path], check=True, capture_output=True)
+    subprocess.run(["screencapture", "-x", save_path], capture_output=True)
     return save_path
 
 

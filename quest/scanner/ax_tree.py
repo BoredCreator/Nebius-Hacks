@@ -16,8 +16,7 @@ from ApplicationServices import (
     AXUIElementPerformAction,
     AXUIElementCopyActionNames,
 )
-from CoreFoundation import CFRange
-import Quartz
+import re
 
 # AX roles considered interactable
 INTERACTABLE_ROLES = {
@@ -72,9 +71,9 @@ def _extract_position(element):
     pos_val = _ax_get(element, "AXPosition")
     if pos_val is not None:
         try:
-            point = Quartz.CGPoint()
-            Quartz.AXValueGetValue(pos_val, Quartz.kAXValueCGPointType, point)
-            return [int(point.x), int(point.y)]
+            m = re.search(r'x:([\d.]+)\s+y:([\d.]+)', str(pos_val))
+            if m:
+                return [int(float(m.group(1))), int(float(m.group(2)))]
         except Exception:
             pass
     return None
@@ -85,9 +84,9 @@ def _extract_size(element):
     size_val = _ax_get(element, "AXSize")
     if size_val is not None:
         try:
-            size = Quartz.CGSize()
-            Quartz.AXValueGetValue(size_val, Quartz.kAXValueCGSizeType, size)
-            return [int(size.width), int(size.height)]
+            m = re.search(r'w:([\d.]+)\s+h:([\d.]+)', str(size_val))
+            if m:
+                return [int(float(m.group(1))), int(float(m.group(2)))]
         except Exception:
             pass
     return None
@@ -153,11 +152,11 @@ def _flatten_elements(node, elements, counter):
     position = node.get("position")
     size = node.get("size")
 
-    # Consider an element interactable if it has a known role or has actions
+    # Consider an element interactable if it has a known role or has actions (excluding containers)
     is_interactable = (
         role in INTERACTABLE_ROLES
-        or len(actions) > 0
-        and role not in ("AXGroup", "AXScrollArea", "AXSplitGroup", "AXApplication", "AXWindow")
+        or (len(actions) > 0
+            and role not in ("AXGroup", "AXScrollArea", "AXSplitGroup", "AXApplication", "AXWindow"))
     )
 
     if is_interactable and position and size:
