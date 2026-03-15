@@ -12,19 +12,17 @@ from quest.dashboard.logger import ghost_log
 
 import requests
 
-NEBIUS_API_URL = "https://api.studio.nebius.ai/v1/chat/completions"
-NEBIUS_VISION_MODEL = "Qwen/Qwen2.5-VL-72B-Instruct"
-NEBIUS_TEXT_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
+from quest.config import NEBIUS_API_KEY, NEBIUS_API_URL, VISION_MODEL
+
+NEBIUS_VISION_MODEL = VISION_MODEL
 
 
 def _get_nebius_key() -> str:
-    key = os.environ.get("NEBIUS_API_KEY")
-    if not key:
+    if not NEBIUS_API_KEY:
         raise RuntimeError(
-            "NEBIUS_API_KEY env var not set. "
-            "Export it before running: export NEBIUS_API_KEY=your_key"
+            "NEBIUS_API_KEY not set. Add it to .env or export it."
         )
-    return key
+    return NEBIUS_API_KEY
 
 
 def _encode_image(path: str, max_dim: int = 1024) -> str:
@@ -92,18 +90,16 @@ def analyze_screenshot(
     """
     api_key = _get_nebius_key()
 
-    # Build element summary for the prompt (strip internal refs)
+    # Build element summary for the prompt (strip internal refs, limit count)
+    # Send at most 40 elements to avoid exceeding API token limits
     elem_summary = []
-    for e in ax_elements:
+    for e in ax_elements[:40]:
         elem_summary.append({
             "id": e.get("id"),
             "role": e.get("role"),
             "title": e.get("title"),
-            "description": e.get("description"),
             "position": e.get("position"),
-            "size": e.get("size"),
             "actions": e.get("actions"),
-            "enabled": e.get("enabled"),
         })
 
     explored_str = ", ".join(explored_states) if explored_states else "none yet"
@@ -208,16 +204,13 @@ def get_llm_decision(
     api_key = _get_nebius_key()
 
     elem_summary = []
-    for e in ax_elements:
+    for e in ax_elements[:40]:
         elem_summary.append({
             "id": e.get("id"),
             "role": e.get("role"),
             "title": e.get("title"),
-            "description": e.get("description"),
             "position": e.get("position"),
-            "size": e.get("size"),
             "actions": e.get("actions"),
-            "enabled": e.get("enabled"),
         })
 
     # Build compact history (last 10 actions)

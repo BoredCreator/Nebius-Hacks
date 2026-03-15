@@ -237,12 +237,8 @@ def run_discovery(pid: int, app_name: str,
         ghost_log("mapper", "action", f"{decision.get('action_type')} -> {decision.get('target')}",
                   {"reasoning": decision.get("reasoning", "")[:120]})
 
-        # Record target as tried in this state
-        target_id = decision.get("target")
-        if target_id:
-            tried_in_state.setdefault(current_state, set()).add(target_id)
-
         # If LLM picked something we already tried, force backtrack
+        target_id = decision.get("target")
         if target_id and target_id in tried_here:
             ghost_log("mapper", "info", f"Already tried {target_id} in this state, skipping")
             consecutive_same_state += 1
@@ -257,6 +253,10 @@ def run_discovery(pid: int, app_name: str,
                 else:
                     break
             continue
+
+        # Record target as tried in this state
+        if target_id:
+            tried_in_state.setdefault(current_state, set()).add(target_id)
 
         # Execute the action
         _execute_action(decision, elements_by_id)

@@ -26,7 +26,7 @@ perform. Think about:
 - How would they navigate?
 - What would frustrate them? What would they click repeatedly?
 
-Generate between 5-15 test cases depending on app complexity.
+Generate between 5-8 test cases depending on app complexity.
 Each test case should be a realistic sequence of actions.
 
 CRITICAL: Your output must be a valid JSON array of test case objects.
@@ -81,16 +81,13 @@ def _build_llm_prompt(app_graph: dict, persona: dict) -> str:
     all_element_ids = []
     for state_name, state_data in app_graph.get("states", {}).items():
         elements_desc = []
-        for elem in state_data.get("elements", []):
+        # Limit to 30 elements per state to keep prompt within token limits
+        for elem in state_data.get("elements", [])[:30]:
             all_element_ids.append(elem["id"])
             elem_line = (
                 f"  - {elem['id']}: {elem['role']} \"{elem.get('title', '')}\" "
-                f"— {elem.get('description', '')} | "
-                f"actions: {elem.get('actions', [])} | "
-                f"enabled: {elem.get('enabled', True)}"
+                f"actions: {elem.get('actions', [])}"
             )
-            if elem.get("value") is not None:
-                elem_line += f" | current_value: \"{elem['value']}\""
             elements_desc.append(elem_line)
 
         transitions_desc = ""
@@ -124,38 +121,7 @@ def _build_llm_prompt(app_graph: dict, persona: dict) -> str:
         f"Input Style: {persona.get('input_style', 'normal')}"
     )
 
-    test_case_schema = json.dumps({
-        "test_id": "test_{persona_id}_001",
-        "persona_id": persona["id"],
-        "persona_name": persona["name"],
-        "title": "Short descriptive title",
-        "description": "What this test verifies",
-        "severity_if_fails": "critical|high|medium|low",
-        "starting_state": "state_name_from_app_graph",
-        "steps": [
-            {
-                "step_number": 1,
-                "action": "click|right_click|double_click|type|key_press|drag|scroll|coordinate_click|wait",
-                "target": "element_id or null",
-                "coordinates": "null or [x, y]",
-                "value": "null or text to type",
-                "key": "null or key name",
-                "modifiers": "null or [\"cmd\", \"shift\", etc]",
-                "drag_end": "null or [x, y]",
-                "scroll_direction": "null or up/down/left/right",
-                "wait_seconds": "null or number",
-                "expected_result": "What should happen",
-                "failure_indicators": ["App crashes", "Error dialog appears"]
-            }
-        ],
-        "cleanup_steps": [
-            {
-                "action": "key_press",
-                "key": "escape",
-                "modifiers": None
-            }
-        ]
-    }, indent=2)
+    test_case_schema = """{"test_id":"test_PERSONA_001","persona_id":"...","persona_name":"...","title":"...","description":"...","severity_if_fails":"critical|high|medium|low","starting_state":"state_name","steps":[{"step_number":1,"action":"click|type|key_press|scroll|wait","target":"elem_id","value":null,"key":null,"modifiers":null,"expected_result":"..."}],"cleanup_steps":[{"action":"key_press","key":"escape"}]}"""
 
     return f"""=== APPLICATION GRAPH ===
 {app_desc}
@@ -168,7 +134,7 @@ Return a JSON array where each object follows this exact schema:
 {test_case_schema}
 
 === INSTRUCTIONS ===
-Generate 5-15 test cases that "{persona['name']}" would naturally perform on this app.
+Generate 5-8 test cases that "{persona['name']}" would naturally perform on this app.
 Include a mix of:
 - Happy path tests (normal usage in this persona's style)
 - Negative tests (trying to break things based on persona behavior)
@@ -207,7 +173,7 @@ def _call_nebius_llm(prompt: str, system_prompt: str) -> str:
             {"role": "user", "content": prompt}
         ],
         "temperature": LLM_TEMPERATURE,
-        "max_tokens": LLM_MAX_TOKENS
+        "max_tokens": min(LLM_MAX_TOKENS, 4000)
     }
 
     response = requests.post(NEBIUS_API_URL, headers=headers, json=payload)
