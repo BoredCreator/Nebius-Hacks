@@ -232,12 +232,15 @@ Recent interaction history:
 {json.dumps(recent_history, indent=2)}
 
 Decide the NEXT ACTION. You MUST pick an element you have NOT tried yet.
+
+CRITICAL: You MUST always provide "coordinates": [x, y] with the exact pixel position to click. Look at the screenshot and estimate the center of the element. Do NOT return null coordinates — if you want to click something, you MUST give its [x, y] position. If you are choosing coordinate_click or click, coordinates are REQUIRED.
+
 Respond with ONLY valid JSON:
 {{
     "reasoning": "Why I'm choosing this action",
     "action_type": "click|right_click|double_click|type|key_press|drag|scroll|coordinate_click",
     "target": "elem_id or null",
-    "coordinates": [x, y] // or null,
+    "coordinates": [x, y],
     "value": "text to type or null",
     "key": "key name or null",
     "modifiers": ["cmd", "shift"] // or null,

@@ -92,13 +92,39 @@ def _execute_action(decision: dict, elements_by_id: dict, window_bounds: dict = 
     drag_end = decision.get("drag_end")
     scroll_dir = decision.get("scroll_direction")
 
-    # Resolve coordinates from element if needed
+    # Resolve coordinates from element if we have a target
     if target and target in elements_by_id and not coords:
         elem = elements_by_id[target]
         pos = elem.get("position", [0, 0])
         size = elem.get("size", [0, 0])
         if pos and pos != [0, 0]:
             coords = [pos[0] + size[0] // 2, pos[1] + size[1] // 2]
+
+    # If the LLM gave no target and no coords but described what it wants to
+    # click (common with coordinate_click), try to fuzzy-match its reasoning
+    # against known vision elements.
+    if not coords and action_type in ("click", "coordinate_click"):
+        reasoning = (decision.get("reasoning") or "").lower()
+        best_match = None
+        for eid, elem in elements_by_id.items():
+            if elem.get("source") != "vision":
+                continue
+            title = (elem.get("title") or "").lower()
+            if not title:
+                continue
+            # Check if the element title appears in the LLM reasoning
+            if title in reasoning or any(word in reasoning for word in title.split() if len(word) > 3):
+                pos = elem.get("position", [0, 0])
+                size = elem.get("size", [0, 0])
+                if pos and pos != [0, 0]:
+                    best_match = (eid, [pos[0] + size[0] // 2, pos[1] + size[1] // 2])
+                    break
+        if best_match:
+            target = best_match[0]
+            coords = best_match[1]
+            decision["target"] = target  # update so it gets tracked as tried
+            ghost_log("mapper", "info",
+                      f"Resolved missing coords from vision element '{target}' at {coords}")
 
     # Block any action whose coordinates land outside the app window
     if coords and window_bounds and not _is_within_bounds(coords, window_bounds):
@@ -296,14 +322,24 @@ def run_discovery(pid: int, app_name: str,
 
         if decision is None:
             ghost_log("mapper", "warning", "LLM returned no decision, backtracking")
-            _backtrack(dfs_stack)
+            consecutive_same_state += 1
+            if consecutive_same_state >= max_consecutive_same:
+                _backtrack(dfs_stack)
+                consecutive_same_state = 0
+                if dfs_stack:
+                    current_state = dfs_stack[-1]
+                    key_press("escape", pid=pid)
+                    time.sleep(0.5)
+                else:
+                    break
             continue
 
         ghost_log("mapper", "action", f"{decision.get('action_type')} -> {decision.get('target')}",
                   {"reasoning": decision.get("reasoning", "")[:120]})
 
-        # If LLM picked something we already tried, force backtrack
         target_id = decision.get("target")
+
+        # If LLM picked something we already tried, force backtrack
         if target_id and target_id in tried_here:
             ghost_log("mapper", "info", f"Already tried {target_id} in this state, skipping")
             consecutive_same_state += 1
@@ -319,15 +355,30 @@ def run_discovery(pid: int, app_name: str,
                     break
             continue
 
-        # Record target as tried in this state
+        # Record target as tried in this state (even null targets get a
+        # synthetic key so repeated failures don't loop forever)
         if target_id:
             tried_in_state.setdefault(current_state, set()).add(target_id)
+        else:
+            # Track null-target attempts by reasoning hash so we don't loop
+            reason_key = f"_no_target_{hash(decision.get('reasoning', ''))}"
+            tried_in_state.setdefault(current_state, set()).add(reason_key)
 
-        # Execute the action (blocked if coordinates land outside app window)
-        # Events are sent directly to the app's PID — no focus stealing needed.
+        # Execute the action
         action_ok = _execute_action(decision, elements_by_id, window_bounds, pid=pid)
         if not action_ok:
+            ghost_log("mapper", "warning", "Action failed, incrementing stuck counter")
             consecutive_same_state += 1
+            if consecutive_same_state >= max_consecutive_same:
+                ghost_log("mapper", "info", "Too many failed actions, backtracking")
+                _backtrack(dfs_stack)
+                consecutive_same_state = 0
+                if dfs_stack:
+                    current_state = dfs_stack[-1]
+                    key_press("escape", pid=pid)
+                    time.sleep(0.5)
+                else:
+                    break
             continue
         interaction_history.append({
             "state": current_state,
