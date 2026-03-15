@@ -7,8 +7,7 @@ import os
 import re
 import requests
 
-NEBIUS_API_URL = "https://api.studio.nebius.ai/v1/chat/completions"
-NEBIUS_API_KEY = os.environ.get("NEBIUS_API_KEY")
+from quest.config import NEBIUS_API_URL, NEBIUS_API_KEY, TEXT_MODEL, LLM_TEMPERATURE, LLM_MAX_TOKENS
 
 TEST_GEN_SYSTEM_PROMPT = """You are an expert QA test engineer who specializes in \
 persona-driven exploratory testing of macOS desktop applications.
@@ -201,13 +200,13 @@ def _call_nebius_llm(prompt: str, system_prompt: str) -> str:
     }
 
     payload = {
-        "model": "meta-llama/Llama-3.3-70B-Instruct",
+        "model": TEXT_MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.7,
-        "max_tokens": 8000
+        "temperature": LLM_TEMPERATURE,
+        "max_tokens": LLM_MAX_TOKENS
     }
 
     response = requests.post(NEBIUS_API_URL, headers=headers, json=payload)

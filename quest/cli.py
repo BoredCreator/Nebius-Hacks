@@ -146,33 +146,19 @@ def select_personas(personas: list[dict]) -> list[dict]:
 def run_tests(app_graph: dict, scan_dir: str, personas: list[dict]):
     """Generate tests for each persona and execute them."""
     app_name = app_graph["app_name"]
-    all_test_cases = []
-
-    test_cases_path = os.path.join(scan_dir, "test_cases.json")
-    existing_tests = {}
-    if os.path.isfile(test_cases_path):
-        with open(test_cases_path) as f:
-            for tc in json.load(f):
-                existing_tests[tc["persona"]] = tc
+    test_cases_by_persona = {}
 
     print(f"\n  Generating tests for {len(personas)} persona(s)...\n")
 
     for persona in personas:
-        if persona["name"] in existing_tests:
-            print(f"  Test cases already exist for {persona['name']}")
-            all_test_cases.append(existing_tests[persona["name"]])
-        else:
-            print(f"  Generating tests for {persona['name']}...")
-            tests = generate_tests(app_graph, persona, scan_dir)
-            all_test_cases.extend(tests)
-            print(f"    Generated {len(tests)} test case(s)")
+        print(f"  Generating tests for {persona['name']}...")
+        tests = generate_tests(app_graph, persona, scan_dir)
+        test_cases_by_persona[persona["id"]] = tests
+        print(f"    Generated {len(tests)} test case(s)")
 
-    # Save all test cases
-    with open(test_cases_path, "w") as f:
-        json.dump(all_test_cases, f, indent=2)
-
-    print(f"\n  Running {len(all_test_cases)} test(s) across {len(personas)} persona(s)...\n")
-    report = run_agents(app_name, all_test_cases, personas, scan_dir)
+    total_tests = sum(len(tc) for tc in test_cases_by_persona.values())
+    print(f"\n  Running {total_tests} test(s) across {len(personas)} persona(s)...\n")
+    report = run_agents(app_name, test_cases_by_persona, app_graph, scan_dir)
 
     print(f"\n{'=' * 40}")
     print(f"  RESULTS")
