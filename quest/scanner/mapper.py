@@ -28,16 +28,21 @@ from quest.scanner.vision import analyze_screenshot, get_llm_decision
 
 
 def _elements_signature(elements: list[dict]) -> str:
-    """Create a signature from element roles, titles, values, and count for state dedup."""
+    """Create a signature from element roles, titles, and count for state dedup.
+
+    Deliberately ignores 'value' because many apps (especially Electron apps
+    like Spotify, Discord) have dynamic values that change every frame
+    (timers, progress bars, now-playing text) which would make every read
+    look like a new state.  The structural layout (roles + titles + count)
+    is a much more stable indicator of which screen we're on.
+    """
     parts = []
     for e in elements:
         role = e.get("role", "")
         title = e.get("title", "") or ""
-        value = e.get("value", "") or ""
         enabled = "1" if e.get("enabled", True) else "0"
-        parts.append(f"{role}:{title}:{value}:{enabled}")
+        parts.append(f"{role}:{title}:{enabled}")
     parts.sort()
-    # Include element count so adding/removing elements changes the sig
     return f"n={len(parts)}|" + "|".join(parts)
 
 
@@ -92,7 +97,8 @@ def _execute_action(decision: dict, elements_by_id: dict, window_bounds: dict = 
         elem = elements_by_id[target]
         pos = elem.get("position", [0, 0])
         size = elem.get("size", [0, 0])
-        coords = [pos[0] + size[0] // 2, pos[1] + size[1] // 2]
+        if pos and pos != [0, 0]:
+            coords = [pos[0] + size[0] // 2, pos[1] + size[1] // 2]
 
     # Block any action whose coordinates land outside the app window
     if coords and window_bounds and not _is_within_bounds(coords, window_bounds):
@@ -100,20 +106,24 @@ def _execute_action(decision: dict, elements_by_id: dict, window_bounds: dict = 
                   f"Blocked out-of-window action at {coords} (window: {window_bounds})")
         return False
 
-    # For AX-based actions, try the AX action first
+    # For AX-based actions, try the AX action first (only for real AX elements, not vision)
     if target and target in elements_by_id and action_type == "click":
         elem = elements_by_id[target]
-        ax_ref = elem.get("_ax_element")
-        actions = elem.get("actions", [])
-        if ax_ref and "AXPress" in actions:
-            if perform_ax_action(ax_ref, "AXPress"):
-                ghost_log("interactions", "action", f"AX Pressed {target} ({elem.get('title', '?')})")
-                return True
+        if elem.get("source") != "vision":
+            ax_ref = elem.get("_ax_element")
+            actions = elem.get("actions", [])
+            if ax_ref and "AXPress" in actions:
+                if perform_ax_action(ax_ref, "AXPress"):
+                    ghost_log("interactions", "action", f"AX Pressed {target} ({elem.get('title', '?')})")
+                    return True
 
     if action_type in ("click", "coordinate_click"):
         if coords:
             ghost_log("interactions", "action", f"Click at ({coords[0]}, {coords[1]})")
             click(coords[0], coords[1], pid=pid)
+        else:
+            ghost_log("interactions", "warning", f"No valid coordinates for click on {target}")
+            return False
     elif action_type == "right_click":
         if coords:
             ghost_log("interactions", "action", f"Right-click at ({coords[0]}, {coords[1]})")
@@ -201,20 +211,32 @@ def run_discovery(pid: int, app_name: str,
         stored = {k: v for k, v in e.items() if k != "_ax_element"}
         stored_elements.append(stored)
 
-    # Add vision-detected elements
+    # Add vision-detected elements (skip ones with clearly invalid positions)
     for ve in vision_result.get("additional_elements", []):
-        stored_elements.append({
-            "id": f"elem_{len(stored_elements)}",
+        pos = ve.get("position")
+        if not pos or not isinstance(pos, list) or len(pos) < 2:
+            continue
+        if pos[0] == 0 and pos[1] == 0:
+            continue
+        # Skip if position is outside the window bounds
+        if window_bounds and not _is_within_bounds(pos, window_bounds):
+            continue
+        ve_id = f"elem_{len(stored_elements)}"
+        ve_elem = {
+            "id": ve_id,
             "role": "AXUnknown",
             "title": ve.get("description", ""),
             "description": ve.get("description", ""),
-            "position": ve.get("position", [0, 0]),
+            "position": pos,
             "size": [30, 30],
             "actions": [ve.get("suggested_action", "click")],
             "value": None,
             "enabled": True,
             "source": "vision",
-        })
+        }
+        stored_elements.append(ve_elem)
+        # Also add to live elements_by_id so DFS can click them by coordinate
+        elements_by_id[ve_id] = ve_elem
 
     states[state_name] = {
         "screenshot": f"screenshots/state_{state_index}.png",
@@ -323,6 +345,20 @@ def run_discovery(pid: int, app_name: str,
         new_sig = _elements_signature(new_elements)
         new_ss_path = _save_screenshot(scan_dir, state_index, pid)
 
+        # Extra dedup: compare screenshot file sizes as a quick similarity check.
+        # If the AX signature is new but the screenshot is almost identical,
+        # the AX tree likely just had a minor dynamic change (timer tick, etc.)
+        try:
+            old_size = os.path.getsize(ss_path)
+            new_size = os.path.getsize(new_ss_path)
+            size_ratio = min(old_size, new_size) / max(old_size, new_size) if max(old_size, new_size) > 0 else 1.0
+            if new_sig not in visited_signatures and size_ratio > 0.95:
+                ghost_log("mapper", "info",
+                          f"Screenshot nearly identical (ratio={size_ratio:.3f}), treating as same state")
+                visited_signatures.add(new_sig)  # mark as visited so we don't keep re-checking
+        except OSError:
+            size_ratio = 0.0
+
         if new_sig not in visited_signatures:
             # NEW STATE discovered
             consecutive_same_state = 0
@@ -341,18 +377,27 @@ def run_discovery(pid: int, app_name: str,
                 new_stored.append({k: v for k, v in e.items() if k != "_ax_element"})
 
             for ve in new_vision.get("additional_elements", []):
-                new_stored.append({
-                    "id": f"elem_{len(new_stored)}",
+                pos = ve.get("position")
+                if not pos or not isinstance(pos, list) or len(pos) < 2:
+                    continue
+                if pos[0] == 0 and pos[1] == 0:
+                    continue
+                if window_bounds and not _is_within_bounds(pos, window_bounds):
+                    continue
+                ve_id = f"elem_{len(new_stored)}"
+                ve_elem = {
+                    "id": ve_id,
                     "role": "AXUnknown",
                     "title": ve.get("description", ""),
                     "description": ve.get("description", ""),
-                    "position": ve.get("position", [0, 0]),
+                    "position": pos,
                     "size": [30, 30],
                     "actions": [ve.get("suggested_action", "click")],
                     "value": None,
                     "enabled": True,
                     "source": "vision",
-                })
+                }
+                new_stored.append(ve_elem)
 
             states[new_state_name] = {
                 "screenshot": f"screenshots/state_{state_index}.png",

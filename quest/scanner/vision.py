@@ -113,8 +113,8 @@ States already explored: {explored_str}
 
 Your task:
 1. Describe what you see on screen in 1-2 sentences.
-2. Identify any interactive elements visible in the screenshot that are NOT in the accessibility tree list above (custom buttons, icons, canvas elements, etc.). For each, estimate its center position [x, y] on screen.
-3. Suggest the best next action to explore this app (prioritize unexplored areas).
+2. Identify any interactive elements visible in the screenshot that are NOT in the accessibility tree list above (custom buttons, icons, canvas elements, etc.). For each, estimate its center position [x, y] in screen pixel coordinates. Be as precise as possible — these coordinates will be used to click the element. IMPORTANT: Many modern apps (Electron/Chromium) have almost nothing in the AX tree, so look carefully at the screenshot for all clickable UI elements (buttons, links, icons, tabs, search bars, cards, etc.).
+3. Suggest the best next action to explore this app (prioritize unexplored areas). PREFER coordinate_click on elements you can see in the screenshot over AX tree elements.
 4. Provide a short unique signature for this screen state (e.g. "main_window_with_sidebar").
 
 Respond with ONLY valid JSON matching this schema:
@@ -255,10 +255,11 @@ target application window through DFS exploration.
 CRITICAL RULES:
 - NEVER pick an element from the "ALREADY TRIED" list. Pick something new.
 - ONLY interact with elements that are INSIDE the application window. NEVER click the macOS menu bar, Apple menu, Dock, desktop, or any system UI outside the app window.
-- Prioritize: buttons, tabs, sidebar items, text fields, and controls inside the app window.
-- Do NOT open macOS system menus (Apple , File, Edit in the global menu bar).
+- IGNORE all AXMenuBar and AXMenuBarItem elements (like Apple, File, Edit, View, etc.) — these are system-level menu bar items, NOT part of the app's main UI.
+- Many modern apps (Electron/Chromium apps like Spotify, Discord, Slack, VS Code) have very few elements in the accessibility tree. The screenshot is your primary source of truth for what's on screen.
+- STRONGLY PREFER using coordinate_click on visible UI elements you can see in the screenshot. Give exact [x, y] pixel coordinates for the center of the element.
+- Prioritize: sidebar items, navigation buttons, search bars, play/pause buttons, tabs, cards, and any clickable UI visible in the screenshot.
 - Right-click elements inside the app to find hidden context menus.
-- If you see elements in the screenshot that aren't in the AX tree but are inside the app window, use coordinate_click.
 - After exploring a submenu/dialog fully, press Escape to dismiss it.
 - Look for scroll areas inside the app and scroll to find hidden elements.
 - If all elements in this state have been tried, say so in reasoning and pick key_press escape."""

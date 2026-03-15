@@ -130,13 +130,15 @@ def _ensure_focused(pid: int) -> None:
 
 
 def _post_event(event, pid: int = None) -> None:
-    """Post a CGEvent directly to a PID (no focus stealing), or fall back to HID tap."""
+    """Post a CGEvent.
+
+    CGEventPostToPid silently fails on many Electron/Chromium apps (Spotify,
+    Discord, VS Code, Slack…) because they use their own event loop.  We now
+    always post to the global HID tap after ensuring the target app is focused,
+    which is how macOS users actually interact with apps and works universally.
+    """
     if pid is not None:
-        try:
-            Quartz.CGEventPostToPid(pid, event)
-            return
-        except (AttributeError, Exception):
-            pass
+        _ensure_focused(pid)
     CGEventPost(kCGHIDEventTap, event)
 
 

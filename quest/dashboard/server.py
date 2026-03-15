@@ -86,6 +86,16 @@ async def index():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 
+@app.get("/static/logo.png")
+async def logo():
+    """Serve the Quest logo."""
+    logo_path = os.path.join(os.path.dirname(__file__), "..", "..", "Untitled design (16).png")
+    logo_path = os.path.abspath(logo_path)
+    if os.path.exists(logo_path):
+        return FileResponse(logo_path, media_type="image/png")
+    return JSONResponse({"error": "Logo not found"}, status_code=404)
+
+
 # ============ REST API ============
 
 @app.get("/api/logs")

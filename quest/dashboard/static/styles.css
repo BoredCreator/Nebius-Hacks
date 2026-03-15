@@ -50,6 +50,7 @@ header {
 }
 
 .header-left { display: flex; align-items: center; gap: 12px; }
+.header-logo { height: 32px; width: auto; border-radius: 6px; }
 .header-left h1 { font-size: 18px; font-weight: 600; }
 .subtitle { color: var(--text-secondary); font-size: 13px; }
 
