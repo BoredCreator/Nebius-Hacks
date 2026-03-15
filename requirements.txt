@@ -1,2 +1,5 @@
 InquirerPy
 requests
+fastapi
+uvicorn[standard]
+websockets

@@ -1,7 +1,7 @@
 {
-  "report_id": "report_20260315_114432",
+  "report_id": "report_20260315_114753",
   "app_name": "Spotify",
-  "generated_at": "2026-03-15T11:44:32.811598",
+  "generated_at": "2026-03-15T11:47:53.794528",
   "summary": {
     "total_tests": 2,
     "passed": 2,
@@ -14,7 +14,7 @@
     "high_bugs": 0,
     "medium_bugs": 0,
     "low_bugs": 0,
-    "total_duration_seconds": 7.48
+    "total_duration_seconds": 179.42
   },
   "bugs": [],
   "persona_breakdown": {
@@ -42,9 +42,9 @@
       "persona_name": "The Hacker",
       "title": "SQL Injection in Search Field",
       "status": "PASS",
-      "started_at": "2026-03-15T11:44:25.336954",
-      "ended_at": "2026-03-15T11:44:28.835799",
-      "duration_seconds": 3.5,
+      "started_at": "2026-03-15T11:44:54.374232",
+      "ended_at": "2026-03-15T11:46:37.320058",
+      "duration_seconds": 102.95,
       "step_results": [
         {
           "step_number": 1,
@@ -53,8 +53,8 @@
           "status": "INCONCLUSIVE",
           "screenshot": "scans/test_execution/evidence/test_hacker_001/step_1.png",
           "expected": "Search field is focused",
-          "actual": "LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions",
-          "llm_reasoning": "Could not reach LLM for evaluation"
+          "actual": "No visual information available, and the accessibility tree does not provide sufficient information about the search field's state",
+          "llm_reasoning": "Without a screenshot or more detailed information from the accessibility tree about the search field, it's impossible to determine if the search field is focused or if the app crashed"
         },
         {
           "step_number": 2,
@@ -63,8 +63,8 @@
           "status": "INCONCLUSIVE",
           "screenshot": "scans/test_execution/evidence/test_hacker_001/step_2.png",
           "expected": "Text entered, app handles it gracefully",
-          "actual": "LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions",
-          "llm_reasoning": "Could not reach LLM for evaluation"
+          "actual": "No visual information available, AX tree does not indicate any issues but also does not provide sufficient information about the search field or its response to the input",
+          "llm_reasoning": "Without a screenshot or more detailed information from the AX tree about the state of the search field and the app's response, it's impossible to determine if the app handled the SQL injection attempt gracefully or not"
         },
         {
           "step_number": 3,
@@ -73,8 +73,8 @@
           "status": "INCONCLUSIVE",
           "screenshot": "scans/test_execution/evidence/test_hacker_001/step_3.png",
           "expected": "Search executes, results shown",
-          "actual": "LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions",
-          "llm_reasoning": "Could not reach LLM for evaluation"
+          "actual": "No visual information available, and the accessibility tree does not provide sufficient information about the search results or the current state of the application",
+          "llm_reasoning": "Without a screenshot or more detailed information from the accessibility tree, it's impossible to determine if the search executed correctly or if the app is in an expected state. The AX tree provided does not contain any relevant information about the search results or the application's response to the SQL injection attempt"
         }
       ],
       "bugs_found": []
@@ -85,9 +85,9 @@
       "persona_name": "The Rusher",
       "title": "Rapid Fire Play/Pause",
       "status": "PASS",
-      "started_at": "2026-03-15T11:44:28.835948",
-      "ended_at": "2026-03-15T11:44:32.811413",
-      "duration_seconds": 3.98,
+      "started_at": "2026-03-15T11:46:37.320257",
+      "ended_at": "2026-03-15T11:47:53.794293",
+      "duration_seconds": 76.47,
       "step_results": [
         {
           "step_number": 1,
@@ -96,8 +96,8 @@
           "status": "INCONCLUSIVE",
           "screenshot": "scans/test_execution/evidence/test_rusher_001/step_1.png",
           "expected": "Playback starts",
-          "actual": "LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions",
-          "llm_reasoning": "Could not reach LLM for evaluation"
+          "actual": "Insufficient information to determine the outcome of the action",
+          "llm_reasoning": "The provided accessibility tree does not contain any relevant information about the playback state, and there is no screenshot available for evaluation. The action performed was a click on an element, but without more context, it's impossible to determine if playback started or if the app crashed."
         },
         {
           "step_number": 2,
@@ -106,8 +106,8 @@
           "status": "INCONCLUSIVE",
           "screenshot": "scans/test_execution/evidence/test_rusher_001/step_2.png",
           "expected": "Playback pauses",
-          "actual": "LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions",
-          "llm_reasoning": "Could not reach LLM for evaluation"
+          "actual": "Unable to determine the result due to lack of information",
+          "llm_reasoning": "The provided accessibility tree does not contain any relevant information about the playback state, and there is no screenshot available for evaluation. The action performed is a click on an element, but without more context, it's impossible to determine if the expected result of playback pausing occurred."
         },
         {
           "step_number": 3,
@@ -116,8 +116,8 @@
           "status": "INCONCLUSIVE",
           "screenshot": "scans/test_execution/evidence/test_rusher_001/step_3.png",
           "expected": "Playback resumes",
-          "actual": "LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions",
-          "llm_reasoning": "Could not reach LLM for evaluation"
+          "actual": "Insufficient information to determine the outcome of the action",
+          "llm_reasoning": "The provided accessibility tree does not contain relevant information about the playback state, and there is no screenshot available for evaluation. The action performed was a click on an element, but without more context or information about the AX tree or the app's state, it's impossible to determine if playback resumed or if the app crashed."
         }
       ],
       "bugs_found": []

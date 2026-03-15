@@ -1,6 +1,6 @@
 # AppGhost Test Report: Spotify
-**Generated:** 2026-03-15T11:44:32.811598
-**Report ID:** report_20260315_114432
+**Generated:** 2026-03-15T11:47:53.794528
+**Report ID:** report_20260315_114753
 
 ## Summary
 | Metric | Value |
@@ -11,7 +11,7 @@
 | Errors | 0 |
 | Skipped | 0 |
 | Total Bugs | 0 |
-| Duration | 7.48s |
+| Duration | 179.42s |
 
 ## Bugs Found
 No bugs detected.
@@ -27,49 +27,49 @@ No bugs detected.
 ### [PASS] SQL Injection in Search Field
 - **Test ID:** `test_hacker_001`
 - **Persona:** The Hacker
-- **Duration:** 3.5s
+- **Duration:** 102.95s
 - **Bugs:** 0
 
   1. [???] `click`
      Target: elem_1
      Expected: Search field is focused
-     Actual: LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions
-     Reasoning: Could not reach LLM for evaluation
+     Actual: No visual information available, and the accessibility tree does not provide sufficient information about the search field's state
+     Reasoning: Without a screenshot or more detailed information from the accessibility tree about the search field, it's impossible to determine if the search field is focused or if the app crashed
 
   2. [???] `type`
      Target: elem_1
      Expected: Text entered, app handles it gracefully
-     Actual: LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions
-     Reasoning: Could not reach LLM for evaluation
+     Actual: No visual information available, AX tree does not indicate any issues but also does not provide sufficient information about the search field or its response to the input
+     Reasoning: Without a screenshot or more detailed information from the AX tree about the state of the search field and the app's response, it's impossible to determine if the app handled the SQL injection attempt gracefully or not
 
   3. [???] `key_press`
      Expected: Search executes, results shown
-     Actual: LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions
-     Reasoning: Could not reach LLM for evaluation
+     Actual: No visual information available, and the accessibility tree does not provide sufficient information about the search results or the current state of the application
+     Reasoning: Without a screenshot or more detailed information from the accessibility tree, it's impossible to determine if the search executed correctly or if the app is in an expected state. The AX tree provided does not contain any relevant information about the search results or the application's response to the SQL injection attempt
 
 ### [PASS] Rapid Fire Play/Pause
 - **Test ID:** `test_rusher_001`
 - **Persona:** The Rusher
-- **Duration:** 3.98s
+- **Duration:** 76.47s
 - **Bugs:** 0
 
   1. [???] `click`
      Target: elem_0
      Expected: Playback starts
-     Actual: LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions
-     Reasoning: Could not reach LLM for evaluation
+     Actual: Insufficient information to determine the outcome of the action
+     Reasoning: The provided accessibility tree does not contain any relevant information about the playback state, and there is no screenshot available for evaluation. The action performed was a click on an element, but without more context, it's impossible to determine if playback started or if the app crashed.
 
   2. [???] `click`
      Target: elem_0
      Expected: Playback pauses
-     Actual: LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions
-     Reasoning: Could not reach LLM for evaluation
+     Actual: Unable to determine the result due to lack of information
+     Reasoning: The provided accessibility tree does not contain any relevant information about the playback state, and there is no screenshot available for evaluation. The action performed is a click on an element, but without more context, it's impossible to determine if the expected result of playback pausing occurred.
 
   3. [???] `click`
      Target: elem_0
      Expected: Playback resumes
-     Actual: LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions
-     Reasoning: Could not reach LLM for evaluation
+     Actual: Insufficient information to determine the outcome of the action
+     Reasoning: The provided accessibility tree does not contain relevant information about the playback state, and there is no screenshot available for evaluation. The action performed was a click on an element, but without more context or information about the AX tree or the app's state, it's impossible to determine if playback resumed or if the app crashed.
 
 ## Recommendations
 - No bugs detected — all tests passed.
