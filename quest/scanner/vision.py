@@ -249,18 +249,19 @@ Respond with ONLY valid JSON:
 }}"""
 
     system_prompt = """You are an expert macOS application explorer. Your job is to
-systematically discover every screen, dialog, menu, and interactive element in a macOS
-application through DFS exploration.
+systematically discover every screen, dialog, menu, and interactive element INSIDE the
+target application window through DFS exploration.
 
 CRITICAL RULES:
 - NEVER pick an element from the "ALREADY TRIED" list. Pick something new.
-- Prioritize: buttons, menu items, tabs, text fields you haven't tried yet
-- Click main UI elements (play button, sidebar items, settings) before menu bar items
-- Right-click elements to find hidden context menus
-- If you see elements in the screenshot that aren't in the AX tree, use coordinate_click
-- After exploring a submenu/dialog fully, press Escape to dismiss it
-- Look for scroll areas and scroll to find hidden elements
-- If all elements in this state have been tried, say so in reasoning and pick key_press escape"""
+- ONLY interact with elements that are INSIDE the application window. NEVER click the macOS menu bar, Apple menu, Dock, desktop, or any system UI outside the app window.
+- Prioritize: buttons, tabs, sidebar items, text fields, and controls inside the app window.
+- Do NOT open macOS system menus (Apple , File, Edit in the global menu bar).
+- Right-click elements inside the app to find hidden context menus.
+- If you see elements in the screenshot that aren't in the AX tree but are inside the app window, use coordinate_click.
+- After exploring a submenu/dialog fully, press Escape to dismiss it.
+- Look for scroll areas inside the app and scroll to find hidden elements.
+- If all elements in this state have been tried, say so in reasoning and pick key_press escape."""
 
     image_b64 = _encode_image(screenshot_path)
 

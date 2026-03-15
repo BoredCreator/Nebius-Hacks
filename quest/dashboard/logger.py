@@ -126,8 +126,26 @@ def _notify_listeners(event: dict):
 
 def get_recent_logs(n: int = 100, source: str = None,
                     level: str = None) -> list[dict]:
-    """Get recent log events with optional filtering."""
+    """Get recent log events with optional filtering.
+    Falls back to reading the log file if the in-memory buffer is empty
+    (happens when scanner runs in a separate process).
+    """
     logs = list(LOG_BUFFER)
+
+    # If buffer is empty/small, hydrate from log file
+    if len(logs) < 5 and os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            logs.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            pass
+        except OSError:
+            pass
+
     if source:
         logs = [l for l in logs if l["source"] == source]
     if level:

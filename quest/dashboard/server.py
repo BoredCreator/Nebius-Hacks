@@ -24,6 +24,55 @@ from quest import config
 
 app = FastAPI(title="Quest Dashboard")
 
+
+# ============ LOG FILE WATCHER ============
+# Tails the log file so that logs written by external processes
+# (scanner, generator, executor) are broadcast to WebSocket clients.
+
+_log_watcher_started = False
+
+
+async def _tail_log_file():
+    """Watch the log file for new lines and push them into the event system."""
+    from quest.dashboard.logger import LOG_FILE, LOG_BUFFER, EVENT_LISTENERS
+
+    # Wait for file to exist
+    while not os.path.exists(LOG_FILE):
+        await asyncio.sleep(1)
+
+    # Open and seek to end
+    f = open(LOG_FILE, "r")
+    f.seek(0, 2)  # seek to end
+
+    while True:
+        line = f.readline()
+        if not line:
+            await asyncio.sleep(0.3)
+            continue
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            event = json.loads(line)
+            # Avoid duplicates: only broadcast if not already in buffer
+            if not LOG_BUFFER or LOG_BUFFER[-1].get("id") != event.get("id"):
+                LOG_BUFFER.append(event)
+                for listener in EVENT_LISTENERS:
+                    try:
+                        listener(event)
+                    except Exception:
+                        pass
+        except (json.JSONDecodeError, KeyError):
+            pass
+
+
+@app.on_event("startup")
+async def start_log_watcher():
+    global _log_watcher_started
+    if not _log_watcher_started:
+        _log_watcher_started = True
+        asyncio.create_task(_tail_log_file())
+
 # Serve static files
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -211,10 +260,11 @@ async def websocket_logs(websocket: WebSocket):
     await websocket.accept()
 
     queue = asyncio.Queue()
+    loop = asyncio.get_event_loop()
 
     def on_event(event):
         try:
-            queue.put_nowait(event)
+            loop.call_soon_threadsafe(queue.put_nowait, event)
         except Exception:
             pass
 

@@ -173,7 +173,7 @@ def _call_nebius_llm(prompt: str, system_prompt: str) -> str:
             {"role": "user", "content": prompt}
         ],
         "temperature": LLM_TEMPERATURE,
-        "max_tokens": min(LLM_MAX_TOKENS, 4000)
+        "max_tokens": min(LLM_MAX_TOKENS, 8000)
     }
 
     response = requests.post(NEBIUS_API_URL, headers=headers, json=payload)
@@ -216,6 +216,35 @@ def _parse_test_cases(llm_response: str, persona: dict) -> list[dict]:
                     test_cases = json.loads(cleaned)
                 except json.JSONDecodeError:
                     pass
+
+    # Try recovering complete objects from a truncated array
+    if test_cases is None:
+        start = llm_response.find("[")
+        if start != -1:
+            partial = llm_response[start:]
+            recovered = []
+            depth = 0
+            obj_start = None
+            for i, ch in enumerate(partial):
+                if ch == "{":
+                    if depth == 1:
+                        obj_start = i
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 1 and obj_start is not None:
+                        try:
+                            obj = json.loads(partial[obj_start:i + 1])
+                            recovered.append(obj)
+                        except json.JSONDecodeError:
+                            pass
+                        obj_start = None
+                elif ch == "[":
+                    if depth == 0:
+                        depth = 1
+            if recovered:
+                print(f"  Warning: LLM response was truncated; recovered {len(recovered)} complete test case(s).")
+                test_cases = recovered
 
     if test_cases is None:
         raise ValueError(
