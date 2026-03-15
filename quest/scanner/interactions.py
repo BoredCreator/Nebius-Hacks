@@ -79,14 +79,14 @@ def _modifier_mask(modifiers: list[str] | None) -> int:
 
 def screenshot(save_path: str, pid: int = None) -> str:
     """
-    Take a screenshot. If pid is given, capture only that app's windows.
-    Falls back to full-screen capture via screencapture CLI.
+    Take a screenshot. If pid is given, capture only that app's window
+    using CGWindowListCreateImage (captures the actual window content,
+    not whatever is on top at that screen region).
     """
     import os
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     if pid is not None:
-        # Try to capture just the app's windows
         try:
             window_list = Quartz.CGWindowListCopyWindowInfo(
                 Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements,
@@ -98,21 +98,46 @@ def screenshot(save_path: str, pid: int = None) -> str:
                 and w.get(Quartz.kCGWindowLayer, 999) == 0
             ]
             if app_windows:
-                bounds = app_windows[0].get(Quartz.kCGWindowBounds, {})
-                x = int(bounds.get("X", 0))
-                y = int(bounds.get("Y", 0))
-                w = int(bounds.get("Width", 800))
-                h = int(bounds.get("Height", 600))
-                subprocess.run(
-                    ["screencapture", "-R", f"{x},{y},{w},{h}", "-x", save_path],
-                    check=True,
-                    capture_output=True,
+                window_id = app_windows[0].get(Quartz.kCGWindowNumber)
+                # Capture this specific window by its ID
+                image = Quartz.CGWindowListCreateImage(
+                    Quartz.CGRectNull,
+                    Quartz.kCGWindowListOptionIncludingWindow,
+                    window_id,
+                    Quartz.kCGWindowImageBoundsIgnoreFraming
                 )
-                return save_path
+                if image:
+                    import CoreFoundation
+                    url = CoreFoundation.CFURLCreateWithFileSystemPath(
+                        None, save_path, CoreFoundation.kCFURLPOSIXPathStyle, False
+                    )
+                    dest = Quartz.CGImageDestinationCreateWithURL(url, "public.png", 1, None)
+                    if dest:
+                        Quartz.CGImageDestinationAddImage(dest, image, None)
+                        Quartz.CGImageDestinationFinalize(dest)
+                        return save_path
         except Exception:
             pass
 
-    # Fallback: full screen capture
+    # Fallback: screencapture -l (capture by window ID) or full screen
+    if pid is not None:
+        try:
+            window_list = Quartz.CGWindowListCopyWindowInfo(
+                Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements,
+                Quartz.kCGNullWindowID,
+            )
+            for w in window_list:
+                if w.get(Quartz.kCGWindowOwnerPID) == pid and w.get(Quartz.kCGWindowLayer, 999) == 0:
+                    wid = w.get(Quartz.kCGWindowNumber)
+                    subprocess.run(
+                        ["screencapture", "-l", str(wid), "-x", save_path],
+                        capture_output=True,
+                    )
+                    if os.path.exists(save_path) and os.path.getsize(save_path) > 0:
+                        return save_path
+        except Exception:
+            pass
+
     subprocess.run(["screencapture", "-x", save_path], capture_output=True)
     return save_path
 
