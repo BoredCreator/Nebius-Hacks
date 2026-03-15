@@ -137,15 +137,22 @@
 
             <!-- APP GRAPH TAB -->
             <div class="tab-content" id="tab-app-graph">
-                <div class="graph-controls">
+                <div class="graph-toolbar">
                     <select id="graph-scan-select">
                         <option value="">Select a scan...</option>
                     </select>
+                    <button class="tool-btn" id="graph-fit-btn" title="Fit to view">Fit</button>
+                    <button class="tool-btn" id="graph-zoom-in" title="Zoom in">+</button>
+                    <button class="tool-btn" id="graph-zoom-out" title="Zoom out">-</button>
+                    <span class="graph-hint">Drag canvas to pan &middot; Scroll to zoom &middot; Drag nodes to rearrange</span>
                 </div>
-                <div id="graph-container" class="graph-container">
-                    <div id="graph-states"></div>
+                <div id="graph-viewport" class="graph-viewport">
+                    <div id="graph-world">
+                        <svg id="graph-edges" class="graph-edges"></svg>
+                        <div id="graph-nodes"></div>
+                    </div>
                 </div>
-                <div id="graph-detail" class="detail-panel"></div>
+                <div id="graph-detail" class="graph-detail-panel hidden"></div>
             </div>
 
             <!-- TEST CASES TAB -->

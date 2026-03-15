@@ -197,20 +197,113 @@ main {
 .pipeline-arrow { font-size: 24px; color: var(--text-muted); }
 
 /* APP GRAPH VIEW */
-.graph-container {
-    flex: 1; overflow: auto; position: relative;
+.graph-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0; padding-bottom: 10px;
 }
-
-.graph-controls { flex-shrink: 0; padding-bottom: 12px; }
-.graph-controls select {
+.graph-toolbar select {
     background: var(--bg-tertiary); border: 1px solid var(--border);
     color: var(--text-primary); padding: 6px 12px; border-radius: 6px;
 }
+.tool-btn {
+    background: var(--bg-tertiary); border: 1px solid var(--border);
+    color: var(--text-primary); padding: 4px 12px; border-radius: 6px;
+    cursor: pointer; font-size: 13px; font-weight: 600;
+}
+.tool-btn:hover { background: var(--border); }
+.graph-hint { font-size: 11px; color: var(--text-muted); margin-left: auto; }
 
-#graph-states {
-    display: flex; flex-wrap: wrap; gap: 16px; padding: 16px;
+.graph-viewport {
+    flex: 1; overflow: hidden; position: relative;
+    background: var(--bg-primary);
+    border: 1px solid var(--border); border-radius: 8px;
+    cursor: grab;
+}
+.graph-viewport:active { cursor: grabbing; }
+
+#graph-world {
+    position: absolute; top: 0; left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
 }
 
+.graph-edges {
+    position: absolute; top: 0; left: 0;
+    width: 6000px; height: 6000px;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.graph-node {
+    position: absolute;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    width: 240px;
+    cursor: grab;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    user-select: none;
+    overflow: hidden;
+}
+.graph-node:hover { border-color: var(--accent-blue); box-shadow: 0 0 24px rgba(88,166,255,0.15); }
+.graph-node.selected { border-color: var(--accent-cyan); box-shadow: 0 0 30px rgba(57,210,192,0.2); }
+.graph-node:active { cursor: grabbing; }
+
+.graph-node-header {
+    padding: 10px 12px 6px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.graph-node-title {
+    font-size: 12px; font-weight: 700; color: var(--accent-cyan);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;
+}
+.graph-node-badge {
+    font-size: 10px; background: var(--bg-tertiary); color: var(--text-secondary);
+    padding: 2px 7px; border-radius: 8px; font-family: var(--font-mono);
+}
+.graph-node-screenshot {
+    width: 100%; height: 140px; object-fit: cover;
+    background: var(--bg-tertiary); display: block;
+    border-top: 1px solid var(--border);
+}
+.graph-node-footer {
+    padding: 6px 12px 10px;
+    font-size: 11px; color: var(--text-secondary);
+    display: flex; justify-content: space-between;
+}
+
+.graph-edge-line {
+    stroke: var(--accent-blue); stroke-width: 2; fill: none;
+    opacity: 0.5;
+}
+.graph-edge-arrow {
+    fill: var(--accent-blue); opacity: 0.7;
+}
+.graph-edge-label {
+    font-size: 10px; fill: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.graph-detail-panel {
+    background: var(--bg-secondary); border-top: 1px solid var(--border);
+    padding: 16px; max-height: 260px; overflow-y: auto;
+    flex-shrink: 0;
+}
+.graph-detail-panel.hidden { display: none; }
+.graph-detail-panel h3 { color: var(--accent-cyan); margin-bottom: 8px; font-size: 15px; }
+.graph-detail-panel .detail-desc { color: var(--text-secondary); margin-bottom: 10px; font-size: 13px; }
+.graph-detail-table {
+    width: 100%; font-size: 11px; font-family: var(--font-mono);
+    border-collapse: collapse;
+}
+.graph-detail-table th {
+    text-align: left; color: var(--text-muted); padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+}
+.graph-detail-table td { padding: 3px 8px; }
+.graph-detail-table tr:hover { background: var(--bg-tertiary); }
+
+/* Scans tab cards reuse */
 .state-card {
     background: var(--bg-secondary); border: 1px solid var(--border);
     border-radius: 8px; padding: 16px; width: 280px; cursor: pointer;
@@ -219,15 +312,6 @@ main {
 .state-card:hover { border-color: var(--accent-blue); }
 .state-card .state-name { font-weight: 600; margin-bottom: 8px; }
 .state-card .state-elem-count { font-size: 12px; color: var(--text-secondary); }
-.state-card .state-thumb {
-    width: 100%; height: 120px; background: var(--bg-tertiary);
-    border-radius: 4px; margin-top: 8px; object-fit: cover;
-}
-
-.detail-panel {
-    background: var(--bg-secondary); border-top: 1px solid var(--border);
-    padding: 16px; max-height: 300px; overflow-y: auto;
-}
 
 /* TEST CASES */
 .tc-controls { display: flex; gap: 12px; flex-shrink: 0; padding-bottom: 12px; }

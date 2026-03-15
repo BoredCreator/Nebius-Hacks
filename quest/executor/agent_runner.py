@@ -17,6 +17,7 @@ import os
 import time
 import base64
 from datetime import datetime
+from quest.dashboard.logger import ghost_log
 
 from quest.scanner import interactions, ax_tree
 from quest.executor.bug_detector import check_crash, check_hang, get_memory_usage, detect_memory_leak

@@ -3,6 +3,7 @@ Generates persona-driven test cases from an app graph using Nebius Token Factory
 """
 
 import json
+from quest.dashboard.logger import ghost_log
 import os
 import re
 import requests

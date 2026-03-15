@@ -8,6 +8,7 @@ Detects various types of bugs beyond what the LLM catches:
 import os
 import subprocess
 import glob as globmod
+from quest.dashboard.logger import ghost_log
 from datetime import datetime, timedelta
 
 

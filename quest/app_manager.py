@@ -3,6 +3,7 @@
 import os
 import subprocess
 import time
+from quest.dashboard.logger import ghost_log
 
 from quest.config import APPLICATIONS_DIR
 

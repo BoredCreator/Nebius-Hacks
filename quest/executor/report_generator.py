@@ -6,6 +6,7 @@ Outputs both JSON and Markdown reports.
 import json
 import os
 from datetime import datetime
+from quest.dashboard.logger import ghost_log
 
 
 # ---------------------------------------------------------------------------
