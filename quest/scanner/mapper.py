@@ -50,8 +50,34 @@ def _save_screenshot(scan_dir: str, state_index: int, pid: int) -> str:
     return path
 
 
-def _execute_action(decision: dict, elements_by_id: dict) -> None:
-    """Execute an interaction based on the LLM decision."""
+def _is_within_bounds(coords: list, bounds: dict) -> bool:
+    """Return True if [x, y] falls inside the app window bounds."""
+    if not coords or not bounds:
+        return True  # can't check, allow
+    x, y = coords[0], coords[1]
+    return (
+        bounds["x"] <= x <= bounds["x"] + bounds["width"]
+        and bounds["y"] <= y <= bounds["y"] + bounds["height"]
+    )
+
+
+def _filter_elements_to_window(elements: list[dict], bounds: dict) -> list[dict]:
+    """Remove elements whose position is outside the app window."""
+    if not bounds:
+        return elements
+    result = []
+    for e in elements:
+        pos = e.get("position")
+        if pos:
+            if _is_within_bounds(pos, bounds):
+                result.append(e)
+        else:
+            result.append(e)
+    return result
+
+
+def _execute_action(decision: dict, elements_by_id: dict, window_bounds: dict = None, pid: int = None) -> bool:
+    """Execute an interaction based on the LLM decision. Returns False if blocked."""
     action_type = decision.get("action_type", "click")
     target = decision.get("target")
     coords = decision.get("coordinates")
@@ -68,6 +94,12 @@ def _execute_action(decision: dict, elements_by_id: dict) -> None:
         size = elem.get("size", [0, 0])
         coords = [pos[0] + size[0] // 2, pos[1] + size[1] // 2]
 
+    # Block any action whose coordinates land outside the app window
+    if coords and window_bounds and not _is_within_bounds(coords, window_bounds):
+        ghost_log("interactions", "warning",
+                  f"Blocked out-of-window action at {coords} (window: {window_bounds})")
+        return False
+
     # For AX-based actions, try the AX action first
     if target and target in elements_by_id and action_type == "click":
         elem = elements_by_id[target]
@@ -76,42 +108,43 @@ def _execute_action(decision: dict, elements_by_id: dict) -> None:
         if ax_ref and "AXPress" in actions:
             if perform_ax_action(ax_ref, "AXPress"):
                 ghost_log("interactions", "action", f"AX Pressed {target} ({elem.get('title', '?')})")
-                return
+                return True
 
     if action_type in ("click", "coordinate_click"):
         if coords:
             ghost_log("interactions", "action", f"Click at ({coords[0]}, {coords[1]})")
-            click(coords[0], coords[1])
+            click(coords[0], coords[1], pid=pid)
     elif action_type == "right_click":
         if coords:
             ghost_log("interactions", "action", f"Right-click at ({coords[0]}, {coords[1]})")
-            right_click(coords[0], coords[1])
+            right_click(coords[0], coords[1], pid=pid)
     elif action_type == "double_click":
         if coords:
             ghost_log("interactions", "action", f"Double-click at ({coords[0]}, {coords[1]})")
-            double_click(coords[0], coords[1])
+            double_click(coords[0], coords[1], pid=pid)
     elif action_type == "type":
         if value:
             ghost_log("interactions", "action", f"Typing: '{value[:40]}'")
             if coords:
-                click(coords[0], coords[1])
+                click(coords[0], coords[1], pid=pid)
                 time.sleep(0.2)
-            type_text(value)
+            type_text(value, pid=pid)
     elif action_type == "key_press":
         if key:
             mod_str = "+".join(modifiers) + "+" if modifiers else ""
             ghost_log("interactions", "action", f"Key: {mod_str}{key}")
-            key_press(key, modifiers)
+            key_press(key, modifiers, pid=pid)
     elif action_type == "drag":
         if coords and drag_end:
             ghost_log("interactions", "action", f"Drag ({coords[0]},{coords[1]}) -> ({drag_end[0]},{drag_end[1]})")
-            drag(coords[0], coords[1], drag_end[0], drag_end[1])
+            drag(coords[0], coords[1], drag_end[0], drag_end[1], pid=pid)
     elif action_type == "scroll":
         if coords:
             ghost_log("interactions", "action", f"Scroll {scroll_dir or 'down'} at ({coords[0]}, {coords[1]})")
-            scroll(coords[0], coords[1], direction=scroll_dir or "down")
+            scroll(coords[0], coords[1], direction=scroll_dir or "down", pid=pid)
     else:
         ghost_log("interactions", "warning", f"Unknown action type: {action_type}")
+    return True
 
 
 def run_discovery(pid: int, app_name: str,
@@ -144,8 +177,13 @@ def run_discovery(pid: int, app_name: str,
     # Bring app to foreground
     focus_app(pid)
 
+    # Get app window bounds once — used to filter out-of-window elements/actions
+    window_bounds = get_focused_window_bounds(pid)
+    ghost_log("mapper", "info", f"Window bounds: {window_bounds}")
+
     ax_tree = get_ax_tree(pid)
     elements = get_interactable_elements(ax_tree)
+    elements = _filter_elements_to_window(elements, window_bounds)
     sig = _elements_signature(elements)
     ss_path = _save_screenshot(scan_dir, state_index, pid)
 
@@ -211,8 +249,13 @@ def run_discovery(pid: int, app_name: str,
         ghost_log("mapper", "info", f"Step {state_index}",
                   {"states": len(states), "stack_depth": len(dfs_stack), "elapsed": elapsed})
 
-        # Bring app to foreground before each cycle
+        # Refresh window bounds (window may have moved/resized)
+        window_bounds = get_focused_window_bounds(pid) or window_bounds
+
+        # Always refocus the target app before doing anything — prevents
+        # stray clicks landing on VS Code or other windows you're using
         focus_app(pid)
+        time.sleep(0.2)
 
         # Build list of already-tried elements for this state
         tried_here = tried_in_state.get(current_state, set())
@@ -231,7 +274,7 @@ def run_discovery(pid: int, app_name: str,
 
         if decision is None:
             ghost_log("mapper", "warning", "LLM returned no decision, backtracking")
-            _backtrack(dfs_stack, states)
+            _backtrack(dfs_stack)
             continue
 
         ghost_log("mapper", "action", f"{decision.get('action_type')} -> {decision.get('target')}",
@@ -244,11 +287,11 @@ def run_discovery(pid: int, app_name: str,
             consecutive_same_state += 1
             if consecutive_same_state >= max_consecutive_same:
                 ghost_log("mapper", "info", "Forcing backtrack — stuck on repeated elements")
-                _backtrack(dfs_stack, states)
+                _backtrack(dfs_stack)
                 consecutive_same_state = 0
                 if dfs_stack:
                     current_state = dfs_stack[-1]
-                    key_press("escape")
+                    key_press("escape", pid=pid)
                     time.sleep(0.5)
                 else:
                     break
@@ -258,8 +301,12 @@ def run_discovery(pid: int, app_name: str,
         if target_id:
             tried_in_state.setdefault(current_state, set()).add(target_id)
 
-        # Execute the action
-        _execute_action(decision, elements_by_id)
+        # Execute the action (blocked if coordinates land outside app window)
+        # Events are sent directly to the app's PID — no focus stealing needed.
+        action_ok = _execute_action(decision, elements_by_id, window_bounds, pid=pid)
+        if not action_ok:
+            consecutive_same_state += 1
+            continue
         interaction_history.append({
             "state": current_state,
             "action": decision.get("action_type"),
@@ -272,7 +319,7 @@ def run_discovery(pid: int, app_name: str,
 
         # Read new state
         new_ax_tree = get_ax_tree(pid)
-        new_elements = get_interactable_elements(new_ax_tree)
+        new_elements = _filter_elements_to_window(get_interactable_elements(new_ax_tree), window_bounds)
         new_sig = _elements_signature(new_elements)
         new_ss_path = _save_screenshot(scan_dir, state_index, pid)
 
@@ -340,13 +387,13 @@ def run_discovery(pid: int, app_name: str,
 
             if consecutive_same_state >= max_consecutive_same:
                 ghost_log("mapper", "info", f"No new states after {max_consecutive_same} actions, backtracking")
-                _backtrack(dfs_stack, states)
+                _backtrack(dfs_stack)
                 consecutive_same_state = 0
 
                 if dfs_stack:
                     current_state = dfs_stack[-1]
                     # Try pressing Escape to dismiss any dialogs
-                    key_press("escape")
+                    key_press("escape", pid=pid)
                     time.sleep(0.5)
                 else:
                     break
@@ -376,7 +423,7 @@ def run_discovery(pid: int, app_name: str,
     return app_graph
 
 
-def _backtrack(dfs_stack: list[str], states: dict) -> None:
+def _backtrack(dfs_stack: list[str]) -> None:
     """Pop the DFS stack (backtrack to previous state)."""
     if dfs_stack:
         popped = dfs_stack.pop()

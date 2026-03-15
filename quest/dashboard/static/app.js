@@ -178,24 +178,16 @@ function createLogElement(log) {
     const srcClass = `src-${log.source}`;
     const lvlClass = `lvl-${log.level}`;
 
-    let html = `
+    // Main row with timestamp, source, level, message
+    const row = document.createElement('div');
+    row.className = 'log-entry-row';
+    row.innerHTML = `
         <span class="log-ts">${ts}</span>
         <span class="log-src ${srcClass}">${escapeHtml(log.source)}</span>
         <span class="log-lvl ${lvlClass}">${escapeHtml(log.level)}</span>
         <span class="log-msg">${escapeHtml(log.message)}</span>
     `;
-
-    div.innerHTML = html;
-
-    if (log.data && Object.keys(log.data).length > 0) {
-        const dataDiv = document.createElement('div');
-        dataDiv.className = 'log-data';
-        const dataLines = Object.entries(log.data)
-            .map(([k, v]) => `  \u2514\u2500 ${k}: ${truncate(JSON.stringify(v), 120)}`)
-            .join('\n');
-        dataDiv.textContent = dataLines;
-        div.appendChild(dataDiv);
-    }
+    div.appendChild(row);
 
     if (log.screenshot) {
         const imgLink = document.createElement('span');
@@ -206,7 +198,18 @@ function createLogElement(log) {
         imgLink.onclick = () => {
             window.open(`/api/scans/${log.screenshot}`, '_blank');
         };
-        div.querySelector('.log-msg').appendChild(imgLink);
+        row.querySelector('.log-msg').appendChild(imgLink);
+    }
+
+    // Data lines below the main row
+    if (log.data && Object.keys(log.data).length > 0) {
+        const dataDiv = document.createElement('div');
+        dataDiv.className = 'log-data';
+        const dataLines = Object.entries(log.data)
+            .map(([k, v]) => `  \u2514\u2500 ${k}: ${truncate(JSON.stringify(v), 120)}`)
+            .join('\n');
+        dataDiv.textContent = dataLines;
+        div.appendChild(dataDiv);
     }
 
     return div;
@@ -480,14 +483,18 @@ function createGraphNode(name, stateData, scanName, x, y) {
     `;
 
     // Node dragging
+    let dragMoved = false;
     el.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return;
         e.stopPropagation();
-        graphState.dragging = { name, offsetX: e.clientX / graphState.zoom - x, offsetY: e.clientY / graphState.zoom - y };
+        const node = graphState.nodes[name];
+        graphState.dragging = { name, offsetX: e.clientX / graphState.zoom - node.x, offsetY: e.clientY / graphState.zoom - node.y };
+        dragMoved = false;
         el.setPointerCapture(e.pointerId);
     });
     el.addEventListener('pointermove', (e) => {
         if (!graphState.dragging || graphState.dragging.name !== name) return;
+        dragMoved = true;
         const nx = e.clientX / graphState.zoom - graphState.dragging.offsetX;
         const ny = e.clientY / graphState.zoom - graphState.dragging.offsetY;
         el.style.left = nx + 'px';
@@ -498,13 +505,12 @@ function createGraphNode(name, stateData, scanName, x, y) {
     });
     el.addEventListener('pointerup', (e) => {
         if (graphState.dragging && graphState.dragging.name === name) {
-            // If barely moved, treat as click
             graphState.dragging = null;
         }
     });
     el.addEventListener('click', (e) => {
         e.stopPropagation();
-        selectGraphNode(name, stateData, scanName);
+        if (!dragMoved) selectGraphNode(name, stateData, scanName);
     });
 
     return el;

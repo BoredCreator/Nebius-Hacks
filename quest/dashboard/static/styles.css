@@ -136,19 +136,22 @@ main {
 
 .log-entry {
     padding: 2px 8px; border-radius: 3px;
-    display: flex; gap: 8px; align-items: flex-start;
     line-height: 1.6;
 }
 .log-entry:hover { background: var(--bg-secondary); }
 
-.log-ts { color: var(--text-muted); min-width: 85px; flex-shrink: 0; }
+.log-entry-row {
+    display: flex; gap: 8px; align-items: flex-start;
+}
+
+.log-ts { color: var(--text-muted); width: 85px; flex-shrink: 0; }
 .log-src {
-    min-width: 90px; flex-shrink: 0; padding: 0 6px;
+    width: 90px; flex-shrink: 0; padding: 0 6px;
     border-radius: 3px; text-align: center; font-size: 11px;
 }
-.log-lvl { min-width: 90px; flex-shrink: 0; font-weight: 600; }
-.log-msg { flex: 1; word-break: break-word; }
-.log-data { color: var(--text-secondary); font-size: 11px; margin-left: 275px; }
+.log-lvl { width: 90px; flex-shrink: 0; font-weight: 600; }
+.log-msg { flex: 1; min-width: 0; word-break: break-word; white-space: pre-wrap; }
+.log-data { color: var(--text-secondary); font-size: 11px; padding-left: 275px; white-space: pre-wrap; }
 
 /* Source colors */
 .src-mapper { background: #1a3a2a; color: var(--accent-green); }
