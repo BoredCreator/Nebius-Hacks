@@ -12,6 +12,7 @@ from quest import app_manager, config
 from quest.scanner.mapper import run_discovery
 from quest.generator.test_generator import generate_tests
 from quest.executor.agent_runner import run_agents
+from quest.dashboard.logger import ghost_log
 
 BANNER = r"""
  ________                          __
@@ -192,13 +193,19 @@ def main():
             choices=[
                 {"name": "[1] Start New Scan", "value": "new"},
                 {"name": "[2] Load Existing Scan", "value": "load"},
-                {"name": "[3] Exit", "value": "exit"},
+                {"name": "[3] Open Dashboard", "value": "dashboard"},
+                {"name": "[4] Exit", "value": "exit"},
             ],
         ).execute()
 
         if action == "exit":
             print("  Goodbye!")
             sys.exit(0)
+
+        if action == "dashboard":
+            from quest.dashboard.server import start_dashboard
+            start_dashboard()
+            continue
 
         if action == "new":
             result = start_new_scan()

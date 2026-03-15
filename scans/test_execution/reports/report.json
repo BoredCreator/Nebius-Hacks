@@ -1,7 +1,7 @@
 {
-  "report_id": "report_20260315_114021",
+  "report_id": "report_20260315_114432",
   "app_name": "Spotify",
-  "generated_at": "2026-03-15T11:40:21.163887",
+  "generated_at": "2026-03-15T11:44:32.811598",
   "summary": {
     "total_tests": 2,
     "passed": 2,
@@ -14,7 +14,7 @@
     "high_bugs": 0,
     "medium_bugs": 0,
     "low_bugs": 0,
-    "total_duration_seconds": 8.79
+    "total_duration_seconds": 7.48
   },
   "bugs": [],
   "persona_breakdown": {
@@ -42,9 +42,9 @@
       "persona_name": "The Hacker",
       "title": "SQL Injection in Search Field",
       "status": "PASS",
-      "started_at": "2026-03-15T11:40:12.369074",
-      "ended_at": "2026-03-15T11:40:17.458238",
-      "duration_seconds": 5.09,
+      "started_at": "2026-03-15T11:44:25.336954",
+      "ended_at": "2026-03-15T11:44:28.835799",
+      "duration_seconds": 3.5,
       "step_results": [
         {
           "step_number": 1,
@@ -53,7 +53,7 @@
           "status": "INCONCLUSIVE",
           "screenshot": "scans/test_execution/evidence/test_hacker_001/step_1.png",
           "expected": "Search field is focused",
-          "actual": "LLM call failed: 401 Client Error: Unauthorized for url: https://api.studio.nebius.com/v1/chat/completions",
+          "actual": "LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions",
           "llm_reasoning": "Could not reach LLM for evaluation"
         },
         {
@@ -63,7 +63,7 @@
           "status": "INCONCLUSIVE",
           "screenshot": "scans/test_execution/evidence/test_hacker_001/step_2.png",
           "expected": "Text entered, app handles it gracefully",
-          "actual": "LLM call failed: 401 Client Error: Unauthorized for url: https://api.studio.nebius.com/v1/chat/completions",
+          "actual": "LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions",
           "llm_reasoning": "Could not reach LLM for evaluation"
         },
         {
@@ -73,7 +73,7 @@
           "status": "INCONCLUSIVE",
           "screenshot": "scans/test_execution/evidence/test_hacker_001/step_3.png",
           "expected": "Search executes, results shown",
-          "actual": "LLM call failed: 401 Client Error: Unauthorized for url: https://api.studio.nebius.com/v1/chat/completions",
+          "actual": "LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions",
           "llm_reasoning": "Could not reach LLM for evaluation"
         }
       ],
@@ -85,9 +85,9 @@
       "persona_name": "The Rusher",
       "title": "Rapid Fire Play/Pause",
       "status": "PASS",
-      "started_at": "2026-03-15T11:40:17.458719",
-      "ended_at": "2026-03-15T11:40:21.163667",
-      "duration_seconds": 3.7,
+      "started_at": "2026-03-15T11:44:28.835948",
+      "ended_at": "2026-03-15T11:44:32.811413",
+      "duration_seconds": 3.98,
       "step_results": [
         {
           "step_number": 1,
@@ -96,7 +96,7 @@
           "status": "INCONCLUSIVE",
           "screenshot": "scans/test_execution/evidence/test_rusher_001/step_1.png",
           "expected": "Playback starts",
-          "actual": "LLM call failed: 401 Client Error: Unauthorized for url: https://api.studio.nebius.com/v1/chat/completions",
+          "actual": "LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions",
           "llm_reasoning": "Could not reach LLM for evaluation"
         },
         {
@@ -106,7 +106,7 @@
           "status": "INCONCLUSIVE",
           "screenshot": "scans/test_execution/evidence/test_rusher_001/step_2.png",
           "expected": "Playback pauses",
-          "actual": "LLM call failed: 401 Client Error: Unauthorized for url: https://api.studio.nebius.com/v1/chat/completions",
+          "actual": "LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions",
           "llm_reasoning": "Could not reach LLM for evaluation"
         },
         {
@@ -116,7 +116,7 @@
           "status": "INCONCLUSIVE",
           "screenshot": "scans/test_execution/evidence/test_rusher_001/step_3.png",
           "expected": "Playback resumes",
-          "actual": "LLM call failed: 401 Client Error: Unauthorized for url: https://api.studio.nebius.com/v1/chat/completions",
+          "actual": "LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions",
           "llm_reasoning": "Could not reach LLM for evaluation"
         }
       ],

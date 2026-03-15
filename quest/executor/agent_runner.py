@@ -72,21 +72,36 @@ def _call_llm(system_prompt: str, user_prompt: str, image_path: str | None = Non
 
     messages = [{"role": "system", "content": system_prompt}]
 
-    # Build user message (optionally with image)
-    user_content: list[dict] = []
+    # Detect if the image is a real PNG/JPEG (starts with magic bytes)
+    has_real_image = False
     if image_path and os.path.isfile(image_path):
         try:
             with open(image_path, "rb") as f:
-                b64 = base64.b64encode(f.read()).decode()
-            user_content.append({
-                "type": "image_url",
-                "image_url": {"url": f"data:image/png;base64,{b64}"},
-            })
+                header = f.read(8)
+            # PNG magic: \x89PNG, JPEG magic: \xff\xd8\xff
+            if header[:4] == b"\x89PNG" or header[:3] == b"\xff\xd8\xff":
+                has_real_image = True
         except Exception:
-            pass  # skip image if unreadable
+            pass
 
-    user_content.append({"type": "text", "text": user_prompt})
-    messages.append({"role": "user", "content": user_content})
+    if has_real_image:
+        # Vision model with multimodal content
+        user_content: list[dict] = []
+        with open(image_path, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+        user_content.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/png;base64,{b64}"},
+        })
+        user_content.append({"type": "text", "text": user_prompt})
+        messages.append({"role": "user", "content": user_content})
+    else:
+        # Text-only fallback (stub screenshots or missing images)
+        model = os.environ.get("NEBIUS_TEXT_MODEL", "meta-llama/Llama-3.3-70B-Instruct")
+        extra_note = ""
+        if image_path:
+            extra_note = "\n(Note: No screenshot available for this step — evaluate based on action and AX tree only.)\n"
+        messages.append({"role": "user", "content": extra_note + user_prompt})
 
     try:
         resp = requests.post(

@@ -1,6 +1,6 @@
 # AppGhost Test Report: Spotify
-**Generated:** 2026-03-15T11:40:21.163887
-**Report ID:** report_20260315_114021
+**Generated:** 2026-03-15T11:44:32.811598
+**Report ID:** report_20260315_114432
 
 ## Summary
 | Metric | Value |
@@ -11,7 +11,7 @@
 | Errors | 0 |
 | Skipped | 0 |
 | Total Bugs | 0 |
-| Duration | 8.79s |
+| Duration | 7.48s |
 
 ## Bugs Found
 No bugs detected.
@@ -27,48 +27,48 @@ No bugs detected.
 ### [PASS] SQL Injection in Search Field
 - **Test ID:** `test_hacker_001`
 - **Persona:** The Hacker
-- **Duration:** 5.09s
+- **Duration:** 3.5s
 - **Bugs:** 0
 
   1. [???] `click`
      Target: elem_1
      Expected: Search field is focused
-     Actual: LLM call failed: 401 Client Error: Unauthorized for url: https://api.studio.nebius.com/v1/chat/completions
+     Actual: LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions
      Reasoning: Could not reach LLM for evaluation
 
   2. [???] `type`
      Target: elem_1
      Expected: Text entered, app handles it gracefully
-     Actual: LLM call failed: 401 Client Error: Unauthorized for url: https://api.studio.nebius.com/v1/chat/completions
+     Actual: LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions
      Reasoning: Could not reach LLM for evaluation
 
   3. [???] `key_press`
      Expected: Search executes, results shown
-     Actual: LLM call failed: 401 Client Error: Unauthorized for url: https://api.studio.nebius.com/v1/chat/completions
+     Actual: LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions
      Reasoning: Could not reach LLM for evaluation
 
 ### [PASS] Rapid Fire Play/Pause
 - **Test ID:** `test_rusher_001`
 - **Persona:** The Rusher
-- **Duration:** 3.7s
+- **Duration:** 3.98s
 - **Bugs:** 0
 
   1. [???] `click`
      Target: elem_0
      Expected: Playback starts
-     Actual: LLM call failed: 401 Client Error: Unauthorized for url: https://api.studio.nebius.com/v1/chat/completions
+     Actual: LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions
      Reasoning: Could not reach LLM for evaluation
 
   2. [???] `click`
      Target: elem_0
      Expected: Playback pauses
-     Actual: LLM call failed: 401 Client Error: Unauthorized for url: https://api.studio.nebius.com/v1/chat/completions
+     Actual: LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions
      Reasoning: Could not reach LLM for evaluation
 
   3. [???] `click`
      Target: elem_0
      Expected: Playback resumes
-     Actual: LLM call failed: 401 Client Error: Unauthorized for url: https://api.studio.nebius.com/v1/chat/completions
+     Actual: LLM call failed: 404 Client Error: Not Found for url: https://api.studio.nebius.com/v1/chat/completions
      Reasoning: Could not reach LLM for evaluation
 
 ## Recommendations
