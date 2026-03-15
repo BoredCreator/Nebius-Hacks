@@ -110,7 +110,7 @@ def run_demo_mode():
     from quest.scanner.mapper import run_discovery
     from quest.generator.test_generator import generate_tests
     from quest.executor.agent_runner import run_agents
-    from quest.executor.report_generator import generate_report, generate_markdown_report
+    from quest.app_state import capture_snapshot
     from quest.config import get_scan_dir
 
     app_name = "Calculator"
@@ -128,6 +128,11 @@ def run_demo_mode():
 
     pid = launch_app(app_name)
     time.sleep(3)
+
+    # Capture app state snapshot (so we can restore between persona runs)
+    print("  Capturing app state snapshot...")
+    snapshot = capture_snapshot(app_name, scan_dir)
+    print(f"  Snapshot saved ({len(snapshot['items'])} state items)\n")
 
     app_graph = run_discovery(pid, app_name, scan_dir=scan_dir,
                               max_states=15, max_time_seconds=120)
@@ -156,7 +161,7 @@ def run_demo_mode():
     ghost_log("cli", "phase_end", "Generation complete", {"phase": "generation"})
     print()
 
-    # Phase 3: Execute
+    # Phase 3: Execute (with snapshot restore between personas)
     print("  Phase 3: Executing tests...")
     ghost_log("cli", "phase_start", "Starting execution", {"phase": "execution"})
 
@@ -171,6 +176,7 @@ def run_demo_mode():
         test_cases_by_persona=test_cases_by_persona,
         app_graph=app_graph,
         scan_dir=scan_dir,
+        snapshot=snapshot,
     )
 
     ghost_log("cli", "phase_end", "Execution complete", {"phase": "execution"})

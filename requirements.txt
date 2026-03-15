@@ -1,5 +1,17 @@
+# Core dependencies
 InquirerPy
 requests
+
+# Dashboard
 fastapi
 uvicorn[standard]
 websockets
+
+# macOS accessibility & interaction (pyobjc)
+pyobjc-framework-ApplicationServices
+pyobjc-framework-Quartz
+pyobjc-framework-Cocoa
+
+# Testing
+httpx
+pytest

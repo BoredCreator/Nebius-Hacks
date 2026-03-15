@@ -462,7 +462,8 @@ def _build_repro_steps(test_case: dict, up_to_step: int) -> list[str]:
 # ---------------------------------------------------------------------------
 
 def run_agents(app_name: str, test_cases_by_persona: dict,
-               app_graph: dict, scan_dir: str) -> dict:
+               app_graph: dict, scan_dir: str,
+               snapshot: dict = None) -> dict:
     """
     Execute all test cases for all personas.
 
@@ -471,6 +472,8 @@ def run_agents(app_name: str, test_cases_by_persona: dict,
         test_cases_by_persona: {"hacker": [test_cases], "rusher": [...], ...}
         app_graph: Full app graph from the scanner/mapper.
         scan_dir: Directory to save evidence and reports.
+        snapshot: Optional app state snapshot manifest. If provided, app state
+                  is restored between persona runs so login persists.
 
     Returns:
         Full execution report dict.
@@ -485,8 +488,20 @@ def run_agents(app_name: str, test_cases_by_persona: dict,
     pid = get_app_pid(app_name) or 0
 
     all_results: list[dict] = []
+    persona_ids = list(test_cases_by_persona.keys())
 
-    for persona_id, test_cases in test_cases_by_persona.items():
+    for i, persona_id in enumerate(persona_ids):
+        test_cases = test_cases_by_persona[persona_id]
+
+        # Restore app to golden state between persona runs (skip first)
+        if i > 0 and snapshot:
+            print(f"  Restoring app state for next persona...")
+            from quest.app_state import restore_snapshot
+            restore_snapshot(snapshot, app_name)
+            # Re-acquire PID after relaunch
+            pid = get_app_pid(app_name) or 0
+            time.sleep(1)
+
         print(f"\n  === Persona: {persona_id} ({len(test_cases)} tests) ===\n")
         for tc in test_cases:
             print(f"  [{tc['test_id']}] {tc.get('title', tc['test_id'])}")

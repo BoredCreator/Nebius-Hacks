@@ -13,6 +13,7 @@ from quest.scanner.mapper import run_discovery
 from quest.generator.test_generator import generate_tests
 from quest.executor.agent_runner import run_agents
 from quest.dashboard.logger import ghost_log
+from quest.app_state import capture_snapshot, restore_snapshot, load_snapshot
 
 BANNER = r"""
  ________                          __
@@ -73,11 +74,35 @@ def start_new_scan() -> tuple[dict, str] | None:
         return None
     print(f"  {app_name} running (PID: {pid})")
 
-    print("  Running discovery scan...")
-    app_graph = run_discovery(pid, app_name)
-    print(f"  Found {app_graph['total_states']} states, {app_graph['total_elements']} elements")
+    # --- Ask user to log in / set up the app first ---
+    needs_login = inquirer.confirm(
+        message="Does this app require login or setup before testing?",
+        default=True,
+    ).execute()
+
+    if needs_login:
+        print("\n  ┌─────────────────────────────────────────────┐")
+        print("  │  Log into the app now and get it to the     │")
+        print("  │  state you want testing to start from.      │")
+        print("  │                                              │")
+        print("  │  Press Enter when ready.                     │")
+        print("  └─────────────────────────────────────────────┘\n")
+        input("  Ready? Press Enter to continue...")
 
     scan_dir = create_scan_dir(app_name)
+
+    # --- Capture app state snapshot (so we can restore between persona runs) ---
+    if needs_login:
+        print("  Capturing app state snapshot...")
+        snapshot = capture_snapshot(app_name, scan_dir)
+        print(f"  Snapshot saved ({len(snapshot['items'])} state items captured)")
+        ghost_log("cli", "info", "App state snapshot captured",
+                  {"items": list(snapshot["items"].keys())})
+
+    print("  Running discovery scan...")
+    app_graph = run_discovery(pid, app_name, scan_dir=scan_dir)
+    print(f"  Found {app_graph['total_states']} states, {app_graph['total_elements']} elements")
+
     save_app_graph(scan_dir, app_graph)
 
     return app_graph, scan_dir
@@ -148,7 +173,14 @@ def run_tests(app_graph: dict, scan_dir: str, personas: list[dict]):
     app_name = app_graph["app_name"]
     test_cases_by_persona = {}
 
-    print(f"\n  Generating tests for {len(personas)} persona(s)...\n")
+    # Load snapshot if available (for restoring between persona runs)
+    snapshot = load_snapshot(scan_dir)
+    if snapshot:
+        print(f"  Snapshot found — app state will be restored between persona runs\n")
+    else:
+        print(f"  No snapshot found — app state will NOT be reset between personas\n")
+
+    print(f"  Generating tests for {len(personas)} persona(s)...\n")
 
     for persona in personas:
         print(f"  Generating tests for {persona['name']}...")
@@ -158,7 +190,8 @@ def run_tests(app_graph: dict, scan_dir: str, personas: list[dict]):
 
     total_tests = sum(len(tc) for tc in test_cases_by_persona.values())
     print(f"\n  Running {total_tests} test(s) across {len(personas)} persona(s)...\n")
-    report = run_agents(app_name, test_cases_by_persona, app_graph, scan_dir)
+    report = run_agents(app_name, test_cases_by_persona, app_graph, scan_dir,
+                        snapshot=snapshot)
 
     print(f"\n{'=' * 40}")
     print(f"  RESULTS")
