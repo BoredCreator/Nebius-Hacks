@@ -27,7 +27,36 @@ def _get_nebius_key() -> str:
     return key
 
 
-def _encode_image(path: str) -> str:
+def _encode_image(path: str, max_dim: int = 1024) -> str:
+    """Encode image to base64, resizing if needed to stay under API limits."""
+    try:
+        import subprocess
+        # Use sips (built-in macOS) to check size and resize if needed
+        result = subprocess.run(
+            ["sips", "-g", "pixelWidth", "-g", "pixelHeight", path],
+            capture_output=True, text=True,
+        )
+        w = h = 0
+        for line in result.stdout.splitlines():
+            if "pixelWidth" in line:
+                w = int(line.split(":")[-1].strip())
+            if "pixelHeight" in line:
+                h = int(line.split(":")[-1].strip())
+
+        if w > max_dim or h > max_dim:
+            resized_path = path + ".resized.png"
+            # Resize longest side to max_dim
+            subprocess.run(
+                ["sips", "--resampleHeightWidthMax", str(max_dim), path, "--out", resized_path],
+                capture_output=True,
+            )
+            with open(resized_path, "rb") as f:
+                data = base64.b64encode(f.read()).decode("utf-8")
+            os.remove(resized_path)
+            return data
+    except Exception:
+        pass
+
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
 

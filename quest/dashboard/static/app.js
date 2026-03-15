@@ -539,14 +539,7 @@ function drawEdges(graph) {
             path.setAttribute('marker-end', 'url(#arrowhead)');
             svg.appendChild(path);
 
-            // Edge label
-            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label.setAttribute('x', (sx + tx) / 2);
-            label.setAttribute('y', midY - 6);
-            label.setAttribute('text-anchor', 'middle');
-            label.setAttribute('class', 'graph-edge-label edge-label');
-            label.textContent = action.replace(/^elem_/, 'e');
-            svg.appendChild(label);
+            // Edge labels removed for cleaner look
         }
     }
 }
