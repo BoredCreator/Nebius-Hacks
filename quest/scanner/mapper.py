@@ -27,14 +27,17 @@ from quest.scanner.vision import analyze_screenshot, get_llm_decision
 
 
 def _elements_signature(elements: list[dict]) -> str:
-    """Create a rough signature from element roles+titles for state dedup."""
+    """Create a signature from element roles, titles, values, and count for state dedup."""
     parts = []
     for e in elements:
         role = e.get("role", "")
         title = e.get("title", "") or ""
-        parts.append(f"{role}:{title}")
+        value = e.get("value", "") or ""
+        enabled = "1" if e.get("enabled", True) else "0"
+        parts.append(f"{role}:{title}:{value}:{enabled}")
     parts.sort()
-    return "|".join(parts)
+    # Include element count so adding/removing elements changes the sig
+    return f"n={len(parts)}|" + "|".join(parts)
 
 
 def _save_screenshot(scan_dir: str, state_index: int, pid: int) -> str:

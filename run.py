@@ -326,6 +326,7 @@ def run_direct(app_name: str, persona_ids: list = None):
     from quest.scanner.mapper import run_discovery
     from quest.generator.test_generator import generate_tests
     from quest.executor.agent_runner import run_agents
+    from quest.app_state import capture_snapshot
     from quest.config import get_scan_dir
 
     scan_dir = str(get_scan_dir(app_name))
@@ -333,6 +334,11 @@ def run_direct(app_name: str, persona_ids: list = None):
     print(f"\n  Launching {app_name}...")
     pid = launch_app(app_name)
     time.sleep(3)
+
+    # Capture golden state
+    print("  Capturing app state snapshot...")
+    snapshot = capture_snapshot(app_name, scan_dir)
+    print(f"  Snapshot saved ({len(snapshot['items'])} state items)")
 
     print("  Running discovery...")
     app_graph = run_discovery(pid, app_name, scan_dir=scan_dir)
@@ -353,7 +359,8 @@ def run_direct(app_name: str, persona_ids: list = None):
         print(f"   {persona['name']}: {len(tests)} tests")
 
     print("  Executing tests...")
-    report = run_agents(app_name, test_cases_by_persona, app_graph, scan_dir)
+    report = run_agents(app_name, test_cases_by_persona, app_graph, scan_dir,
+                        snapshot=snapshot)
 
     print(f"\n  Total: {report['total_tests']} | Pass: {report['passed']} | Fail: {report['failed']}")
     print(f"  Report: {report['report_path']}\n")
