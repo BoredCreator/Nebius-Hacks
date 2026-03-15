@@ -1,0 +1,155 @@
+[
+    {
+        "id": "rusher",
+        "name": "The Rusher",
+        "description": "Impatient user who clicks fast, skips steps, doesn't read dialogs",
+        "behavior": "Click rapidly, don't wait for loading, skip confirmation dialogs, use keyboard shortcuts aggressively, never read error messages, immediately dismiss popups",
+        "typing_speed": "fast",
+        "patience": "none",
+        "input_style": "minimal"
+    },
+    {
+        "id": "hacker",
+        "name": "The Hacker",
+        "description": "Malicious user trying to break the app with injections and exploits",
+        "behavior": "Try SQL injection in every text field, XSS payloads, path traversal strings, buffer overflow attempts with extremely long strings, try to access hidden menus, right-click everything, look for debug modes",
+        "typing_speed": "medium",
+        "patience": "high",
+        "input_style": "malicious"
+    },
+    {
+        "id": "grandma",
+        "name": "Grandma",
+        "description": "Elderly user who is confused by technology, clicks wrong things",
+        "behavior": "Click slowly, misclick often, click labels instead of buttons, try to double-click everything, get confused by navigation, hit back button repeatedly, accidentally trigger right-click menus, type very slowly with mistakes",
+        "typing_speed": "very_slow",
+        "patience": "confused",
+        "input_style": "typos"
+    },
+    {
+        "id": "edge_lord",
+        "name": "The Edge Lord",
+        "description": "User who inputs the weirdest possible data",
+        "behavior": "Enter unicode, emoji, RTL text, zalgo text, null bytes, extremely long strings (10000+ chars), HTML tags, empty strings, only whitespace, negative numbers where positive expected, dates from year 9999",
+        "typing_speed": "medium",
+        "patience": "medium",
+        "input_style": "chaotic"
+    },
+    {
+        "id": "accessibility",
+        "name": "The Accessibility User",
+        "description": "User who relies entirely on keyboard navigation and screen readers",
+        "behavior": "Never use mouse, only Tab/Shift-Tab to navigate, Enter to activate, arrow keys for lists, check that every element is reachable via keyboard, verify focus indicators are visible, test with VoiceOver enabled",
+        "typing_speed": "medium",
+        "patience": "high",
+        "input_style": "normal"
+    },
+    {
+        "id": "rage_clicker",
+        "name": "The Rage Clicker",
+        "description": "Frustrated user who spam-clicks and aggressively interacts",
+        "behavior": "Click the same button 20 times rapidly, click during loading screens, force quit and reopen, resize window aggressively, minimize and maximize rapidly, drag things to wrong places, undo/redo spam",
+        "typing_speed": "fast",
+        "patience": "none",
+        "input_style": "aggressive"
+    },
+    {
+        "id": "methodical",
+        "name": "The Methodical Tester",
+        "description": "Systematic user who tries every combination thoroughly",
+        "behavior": "Try every menu item in order, fill every form field, test every dropdown option, check every checkbox combination, verify every link, test boundary values in numeric fields, test all keyboard shortcuts listed in menus",
+        "typing_speed": "slow",
+        "patience": "very_high",
+        "input_style": "thorough"
+    },
+    {
+        "id": "multitasker",
+        "name": "The Multitasker",
+        "description": "User who constantly switches between apps and tabs",
+        "behavior": "Cmd-Tab away mid-operation, switch focus to other windows, come back and expect state preserved, copy-paste from other apps, drag files from Finder into the app, trigger Spotlight mid-flow",
+        "typing_speed": "fast",
+        "patience": "low",
+        "input_style": "distracted"
+    },
+    {
+        "id": "minimalist",
+        "name": "The Minimalist",
+        "description": "User who does the absolute bare minimum interaction",
+        "behavior": "Leave every optional field blank, skip all optional steps, use only default settings, never customize, submit forms with minimum required data, never explore beyond the happy path",
+        "typing_speed": "medium",
+        "patience": "low",
+        "input_style": "minimal"
+    },
+    {
+        "id": "power_user",
+        "name": "The Power User",
+        "description": "Expert user who uses every shortcut and hidden feature",
+        "behavior": "Use every keyboard shortcut, right-click context menus, drag and drop everywhere, use modifier keys (Cmd, Option, Shift) with clicks, try hidden preferences, use terminal commands if available, chain complex workflows",
+        "typing_speed": "very_fast",
+        "patience": "medium",
+        "input_style": "advanced"
+    },
+    {
+        "id": "localization_tester",
+        "name": "The Localization Tester",
+        "description": "User testing with non-English locales and input methods",
+        "behavior": "Switch system language mid-session, input CJK characters, use right-to-left text, test with different date/number formats, use accented characters in every field, test with different keyboard layouts",
+        "typing_speed": "slow",
+        "patience": "high",
+        "input_style": "international"
+    },
+    {
+        "id": "offline_user",
+        "name": "The Offline User",
+        "description": "User who loses network connectivity at the worst times",
+        "behavior": "Disable network mid-operation, try to use online features offline, toggle airplane mode, submit forms during network drops, expect graceful offline fallbacks, reconnect and expect sync",
+        "typing_speed": "medium",
+        "patience": "frustrated",
+        "input_style": "normal"
+    },
+    {
+        "id": "screen_reader",
+        "name": "The Screen Reader User",
+        "description": "Blind user navigating entirely via VoiceOver",
+        "behavior": "Navigate with VO+arrow keys, interact with VO+Space, read element descriptions, check rotor navigation, verify all images have alt text, ensure modal dialogs trap focus, test landmark navigation",
+        "typing_speed": "medium",
+        "patience": "high",
+        "input_style": "voiceover"
+    },
+    {
+        "id": "data_hoarder",
+        "name": "The Data Hoarder",
+        "description": "User who creates massive amounts of data to stress test limits",
+        "behavior": "Create hundreds of items, import massive files, fill storage to near-capacity, create deeply nested folder structures, duplicate items repeatedly, never delete anything, test with 10000+ list items",
+        "typing_speed": "fast",
+        "patience": "high",
+        "input_style": "bulk"
+    },
+    {
+        "id": "undo_addict",
+        "name": "The Undo Addict",
+        "description": "User who constantly undoes and redoes actions",
+        "behavior": "Cmd-Z after every action, redo then undo again, undo past the beginning of history, make changes then undo all of them, test undo across different operation types, undo during saves",
+        "typing_speed": "medium",
+        "patience": "medium",
+        "input_style": "reversing"
+    },
+    {
+        "id": "resizer",
+        "name": "The Window Resizer",
+        "description": "User who constantly resizes and repositions the app window",
+        "behavior": "Drag window to minimum size, maximize then restore, move between monitors, use Split View, resize during operations, check layout at every breakpoint, full-screen toggle rapidly",
+        "typing_speed": "medium",
+        "patience": "medium",
+        "input_style": "visual"
+    },
+    {
+        "id": "copy_paster",
+        "name": "The Copy-Paster",
+        "description": "User who pastes unexpected content from clipboard into every field",
+        "behavior": "Paste images into text fields, paste rich text with formatting, paste file paths, paste extremely long clipboard content, paste binary data, paste from password managers, paste multi-line text into single-line fields",
+        "typing_speed": "fast",
+        "patience": "low",
+        "input_style": "clipboard"
+    }
+]
