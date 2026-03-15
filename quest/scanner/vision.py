@@ -198,6 +198,7 @@ def get_llm_decision(
     dfs_stack: list[str],
     app_name: str,
     interaction_history: list[dict],
+    tried_elements: list[str] = None,
 ) -> dict:
     """
     Ask the vision LLM to decide the next exploration action.
@@ -222,18 +223,23 @@ def get_llm_decision(
     # Build compact history (last 10 actions)
     recent_history = interaction_history[-10:] if interaction_history else []
 
+    tried_str = ""
+    if tried_elements:
+        tried_str = f"\n\nALREADY TRIED in this state (DO NOT pick these): {json.dumps(tried_elements)}\n"
+
     user_prompt = f"""App: {app_name}
 Current state: {current_state}
 DFS stack: {json.dumps(dfs_stack)}
 Explored states: {json.dumps(list(explored_states.keys()))}
-
+{tried_str}
 Accessibility tree elements:
 {json.dumps(elem_summary, indent=2)}
 
 Recent interaction history:
 {json.dumps(recent_history, indent=2)}
 
-Decide the NEXT ACTION. Respond with ONLY valid JSON:
+Decide the NEXT ACTION. You MUST pick an element you have NOT tried yet.
+Respond with ONLY valid JSON:
 {{
     "reasoning": "Why I'm choosing this action",
     "action_type": "click|right_click|double_click|type|key_press|drag|scroll|coordinate_click",
@@ -253,16 +259,15 @@ Decide the NEXT ACTION. Respond with ONLY valid JSON:
 systematically discover every screen, dialog, menu, and interactive element in a macOS
 application through DFS exploration.
 
-EXPLORATION RULES:
-- Prioritize elements you haven't interacted with yet
-- Always check the menu bar (File, Edit, View, etc.)
+CRITICAL RULES:
+- NEVER pick an element from the "ALREADY TRIED" list. Pick something new.
+- Prioritize: buttons, menu items, tabs, text fields you haven't tried yet
+- Click main UI elements (play button, sidebar items, settings) before menu bar items
 - Right-click elements to find hidden context menus
 - If you see elements in the screenshot that aren't in the AX tree, use coordinate_click
-- After exploring a submenu/dialog fully, backtrack to parent state
+- After exploring a submenu/dialog fully, press Escape to dismiss it
 - Look for scroll areas and scroll to find hidden elements
-- Try keyboard shortcuts you see listed in menus
-- Mark a state as fully explored when all elements have been tried
-- AVOID repeating the same action on the same element"""
+- If all elements in this state have been tried, say so in reasoning and pick key_press escape"""
 
     image_b64 = _encode_image(screenshot_path)
 

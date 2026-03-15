@@ -75,69 +75,107 @@ def _modifier_mask(modifiers: list[str] | None) -> int:
     return mask
 
 
+# ---------- App Focus ----------
+
+def focus_app(pid: int) -> None:
+    """Bring an app to the foreground by PID using NSRunningApplication."""
+    try:
+        from AppKit import NSRunningApplication, NSApplicationActivateIgnoringOtherApps
+        app = NSRunningApplication.runningApplicationWithProcessIdentifier_(pid)
+        if app:
+            app.activateWithOptions_(NSApplicationActivateIgnoringOtherApps)
+            time.sleep(0.3)
+    except Exception:
+        # Fallback: use osascript
+        try:
+            subprocess.run(
+                ["osascript", "-e", f'tell application "System Events" to set frontmost of (first process whose unix id is {pid}) to true'],
+                capture_output=True, timeout=5,
+            )
+            time.sleep(0.3)
+        except Exception:
+            pass
+
+
 # ---------- Screenshot ----------
+
+def _find_app_window_id(pid: int) -> int | None:
+    """Find the main window ID for an app by PID. Works with Electron apps."""
+    try:
+        window_list = Quartz.CGWindowListCopyWindowInfo(
+            Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements,
+            Quartz.kCGNullWindowID,
+        )
+        # Collect all windows for this PID
+        app_windows = [
+            w for w in window_list
+            if w.get(Quartz.kCGWindowOwnerPID) == pid
+        ]
+        if not app_windows:
+            return None
+
+        # Prefer layer-0 (normal) windows, pick the largest one
+        layer0 = [w for w in app_windows if w.get(Quartz.kCGWindowLayer, 999) == 0]
+        candidates = layer0 if layer0 else app_windows
+
+        # Sort by window area (largest first) — main window is usually biggest
+        def _area(w):
+            b = w.get(Quartz.kCGWindowBounds, {})
+            return int(b.get("Width", 0)) * int(b.get("Height", 0))
+
+        candidates.sort(key=_area, reverse=True)
+        return candidates[0].get(Quartz.kCGWindowNumber)
+    except Exception:
+        return None
+
 
 def screenshot(save_path: str, pid: int = None) -> str:
     """
-    Take a screenshot. If pid is given, capture only that app's window
-    using CGWindowListCreateImage (captures the actual window content,
-    not whatever is on top at that screen region).
+    Take a screenshot of a specific app's window by PID.
+    Uses CGWindowListCreateImage to capture the window's actual pixels
+    even if the app is behind other windows. Falls back to screencapture -l.
     """
     import os
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     if pid is not None:
-        try:
-            window_list = Quartz.CGWindowListCopyWindowInfo(
-                Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements,
-                Quartz.kCGNullWindowID,
-            )
-            app_windows = [
-                w for w in window_list
-                if w.get(Quartz.kCGWindowOwnerPID) == pid
-                and w.get(Quartz.kCGWindowLayer, 999) == 0
-            ]
-            if app_windows:
-                window_id = app_windows[0].get(Quartz.kCGWindowNumber)
-                # Capture this specific window by its ID
+        window_id = _find_app_window_id(pid)
+
+        if window_id is not None:
+            # Method 1: CGWindowListCreateImage (captures behind other windows)
+            try:
                 image = Quartz.CGWindowListCreateImage(
                     Quartz.CGRectNull,
                     Quartz.kCGWindowListOptionIncludingWindow,
                     window_id,
-                    Quartz.kCGWindowImageBoundsIgnoreFraming
+                    Quartz.kCGWindowImageBoundsIgnoreFraming,
                 )
                 if image:
                     import CoreFoundation
                     url = CoreFoundation.CFURLCreateWithFileSystemPath(
-                        None, save_path, CoreFoundation.kCFURLPOSIXPathStyle, False
+                        None, save_path, CoreFoundation.kCFURLPOSIXPathStyle, False,
                     )
                     dest = Quartz.CGImageDestinationCreateWithURL(url, "public.png", 1, None)
                     if dest:
                         Quartz.CGImageDestinationAddImage(dest, image, None)
                         Quartz.CGImageDestinationFinalize(dest)
-                        return save_path
-        except Exception:
-            pass
+                        if os.path.exists(save_path) and os.path.getsize(save_path) > 100:
+                            return save_path
+            except Exception:
+                pass
 
-    # Fallback: screencapture -l (capture by window ID) or full screen
-    if pid is not None:
-        try:
-            window_list = Quartz.CGWindowListCopyWindowInfo(
-                Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements,
-                Quartz.kCGNullWindowID,
-            )
-            for w in window_list:
-                if w.get(Quartz.kCGWindowOwnerPID) == pid and w.get(Quartz.kCGWindowLayer, 999) == 0:
-                    wid = w.get(Quartz.kCGWindowNumber)
-                    subprocess.run(
-                        ["screencapture", "-l", str(wid), "-x", save_path],
-                        capture_output=True,
-                    )
-                    if os.path.exists(save_path) and os.path.getsize(save_path) > 0:
-                        return save_path
-        except Exception:
-            pass
+            # Method 2: screencapture -l (macOS native, by window ID)
+            try:
+                subprocess.run(
+                    ["screencapture", "-l", str(window_id), "-x", save_path],
+                    capture_output=True, timeout=10,
+                )
+                if os.path.exists(save_path) and os.path.getsize(save_path) > 100:
+                    return save_path
+            except Exception:
+                pass
 
+    # Final fallback: full screen (should rarely hit this)
     subprocess.run(["screencapture", "-x", save_path], capture_output=True)
     return save_path
 

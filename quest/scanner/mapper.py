@@ -22,6 +22,7 @@ from quest.scanner.interactions import (
     type_text,
     key_press,
     get_focused_window_bounds,
+    focus_app,
 )
 from quest.scanner.vision import analyze_screenshot, get_llm_decision
 
@@ -140,6 +141,9 @@ def run_discovery(pid: int, app_name: str,
               {"pid": pid, "max_states": max_states, "max_time": max_time_seconds})
     time.sleep(1)  # let the app settle
 
+    # Bring app to foreground
+    focus_app(pid)
+
     ax_tree = get_ax_tree(pid)
     elements = get_interactable_elements(ax_tree)
     sig = _elements_signature(elements)
@@ -194,7 +198,9 @@ def run_discovery(pid: int, app_name: str,
 
     # --- DFS loop ---
     consecutive_same_state = 0
-    max_consecutive_same = 5
+    max_consecutive_same = 3  # reduced from 5 — backtrack faster
+    # Track which elements we've already tried in each state
+    tried_in_state: dict[str, set] = {state_name: set()}
 
     while (
         state_index < max_states
@@ -205,6 +211,12 @@ def run_discovery(pid: int, app_name: str,
         ghost_log("mapper", "info", f"Step {state_index}",
                   {"states": len(states), "stack_depth": len(dfs_stack), "elapsed": elapsed})
 
+        # Bring app to foreground before each cycle
+        focus_app(pid)
+
+        # Build list of already-tried elements for this state
+        tried_here = tried_in_state.get(current_state, set())
+
         # Get LLM decision
         decision = get_llm_decision(
             ax_elements=elements,
@@ -214,6 +226,7 @@ def run_discovery(pid: int, app_name: str,
             dfs_stack=dfs_stack,
             app_name=app_name,
             interaction_history=interaction_history,
+            tried_elements=list(tried_here),
         )
 
         if decision is None:
@@ -224,12 +237,33 @@ def run_discovery(pid: int, app_name: str,
         ghost_log("mapper", "action", f"{decision.get('action_type')} -> {decision.get('target')}",
                   {"reasoning": decision.get("reasoning", "")[:120]})
 
+        # Record target as tried in this state
+        target_id = decision.get("target")
+        if target_id:
+            tried_in_state.setdefault(current_state, set()).add(target_id)
+
+        # If LLM picked something we already tried, force backtrack
+        if target_id and target_id in tried_here:
+            ghost_log("mapper", "info", f"Already tried {target_id} in this state, skipping")
+            consecutive_same_state += 1
+            if consecutive_same_state >= max_consecutive_same:
+                ghost_log("mapper", "info", "Forcing backtrack — stuck on repeated elements")
+                _backtrack(dfs_stack, states)
+                consecutive_same_state = 0
+                if dfs_stack:
+                    current_state = dfs_stack[-1]
+                    key_press("escape")
+                    time.sleep(0.5)
+                else:
+                    break
+            continue
+
         # Execute the action
         _execute_action(decision, elements_by_id)
         interaction_history.append({
             "state": current_state,
             "action": decision.get("action_type"),
-            "target": decision.get("target"),
+            "target": target_id,
             "coordinates": decision.get("coordinates"),
         })
 
@@ -287,6 +321,7 @@ def run_discovery(pid: int, app_name: str,
 
             dfs_stack.append(new_state_name)
             current_state = new_state_name
+            tried_in_state[new_state_name] = set()
             elements = new_elements
             elements_by_id = {e["id"]: e for e in elements}
             ss_path = new_ss_path
